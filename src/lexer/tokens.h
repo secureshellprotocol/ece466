@@ -60,7 +60,7 @@ enum tokens {
 	VOID,
 	VOLATILE,
 	WHILE,
-	_BOOL,
-	_COMPLEX,
-	_IMAGINARY
+	BOOL,
+	COMPLEX,
+	IMAGINARY
 };
