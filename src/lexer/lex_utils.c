@@ -8,7 +8,7 @@ char *get_token_id(int token_code) {
     static char id[16];
 
     if(token_code > IMAGINARY) {
-        return NULL; // Fuck you
+        return NULL;
     }
 
     switch(token_code) {
