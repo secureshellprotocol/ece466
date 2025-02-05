@@ -1682,9 +1682,15 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 /* integers */
+/* HAK -- is it ok to start at the largest primitive (eg long long) */
+/*and work my way down to the datatype i need to be at based on the */ 
+/*L, U declarations?
+
+    /*This feels hacky and also like i will lose precision.             */
+/*as you can tell, this was a rushed one.                           */ 
 case 104:
 YY_RULE_SETUP
-#line 303 "lexer.lex"
+#line 311 "lexer.lex"
 { 
 	yylval.lld = strtol(yytext, NULL, 8);
 	BEGIN(oct);
@@ -1692,7 +1698,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 308 "lexer.lex"
+#line 316 "lexer.lex"
 {
     BEGIN(dec);
     if(yytext[0] == '-'){
@@ -1707,7 +1713,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 320 "lexer.lex"
+#line 328 "lexer.lex"
 {
 	yylval.lld = strtol(yytext, NULL, 16);
 	BEGIN(hex);
@@ -1718,7 +1724,7 @@ case 107:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 326 "lexer.lex"
+#line 334 "lexer.lex"
 {
     yylval.ulld = (unsigned long long int) yylval.lld;
     yylval.tags |= (LL_BIT | U_BIT);
@@ -1731,7 +1737,7 @@ case 108:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 333 "lexer.lex"
+#line 341 "lexer.lex"
 {
     yylval.uld = (unsigned long int) yylval.lld;
     yylval.tags |= (L_BIT | U_BIT);
@@ -1744,7 +1750,7 @@ case 109:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 340 "lexer.lex"
+#line 348 "lexer.lex"
 {
     yylval.tags |= (LL_BIT);
     BEGIN(INITIAL);
@@ -1756,7 +1762,7 @@ case 110:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 346 "lexer.lex"
+#line 354 "lexer.lex"
 {
     yylval.ld = (long int) yylval.lld;
     yylval.tags |= (L_BIT);
@@ -1769,7 +1775,7 @@ case 111:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 353 "lexer.lex"
+#line 361 "lexer.lex"
 {
     yylval.ud = (unsigned int) yylval.lld;
     yylval.tags |= (U_BIT);
@@ -1780,7 +1786,7 @@ YY_RULE_SETUP
 case 112:
 /* rule 112 can match eol */
 YY_RULE_SETUP
-#line 360 "lexer.lex"
+#line 368 "lexer.lex"
 {
     yylval.d = (int) yylval.lld;
     BEGIN(INITIAL);
@@ -1789,7 +1795,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 113:
 YY_RULE_SETUP
-#line 367 "lexer.lex"
+#line 375 "lexer.lex"
 {
 	fprintf(stderr, \
 "%s: Unrecognized hex number at line %d: %s\n", yyin_name, line_num, yytext);
@@ -1798,7 +1804,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 114:
 YY_RULE_SETUP
-#line 372 "lexer.lex"
+#line 380 "lexer.lex"
 {
 	fprintf(stderr, \
 "%s: Unrecognized octal number at line %d: %s\n", yyin_name, line_num, yytext);
@@ -1808,7 +1814,7 @@ YY_RULE_SETUP
 /* identifier */
 case 115:
 YY_RULE_SETUP
-#line 378 "lexer.lex"
+#line 386 "lexer.lex"
 {
 	yylval.s = strdup(yytext);
 	return IDENT;
@@ -1817,22 +1823,22 @@ YY_RULE_SETUP
 case 116:
 /* rule 116 can match eol */
 YY_RULE_SETUP
-#line 383 "lexer.lex"
+#line 391 "lexer.lex"
 ++line_num;
 	YY_BREAK
 case 117:
 YY_RULE_SETUP
-#line 384 "lexer.lex"
+#line 392 "lexer.lex"
 {fprintf(stderr, \
 "%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
 	YY_BREAK
 case 118:
 YY_RULE_SETUP
-#line 388 "lexer.lex"
+#line 396 "lexer.lex"
 ECHO;
 	YY_BREAK
-#line 1835 "lex.yy.c"
+#line 1841 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(markermode):
 case YY_STATE_EOF(markermode_s2):
@@ -2860,7 +2866,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 388 "lexer.lex"
+#line 396 "lexer.lex"
 
 
 int main(int argc, char* argv[])
