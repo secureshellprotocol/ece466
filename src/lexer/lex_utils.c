@@ -18,6 +18,7 @@ char *get_token_id(int token_code) {
             break;
         case CHARLIT:
             strncpy(id, "CHARLIT", 16);
+            break;
         case STRING:
             strncpy(id, "STRING", 16);
             break;

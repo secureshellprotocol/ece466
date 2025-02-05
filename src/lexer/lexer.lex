@@ -1,3 +1,7 @@
+
+    /* mid burger lexer -- james ryan */
+
+%option yylineno
 %option noyywrap
 %top{
 #include <string.h>
@@ -5,24 +9,70 @@
 #include "lex_utils.h"
 #include "tokens.h"
 
-// kludge
-#define YYSTYPE char *
-extern YYSTYPE yylval;
+// mega-mega-kludge
+
+union yyunion
+{
+	// integer
+	int d;
+	unsigned int ud;
+	long int ld;
+	unsigned long int uld;
+	long long lld;
+	unsigned long long int ulld;
+	//	real
+	float f;
+	double df;
+	long double ldf;
+	//	charlit, ident or string
+	char *s;
+};
+
+#define YYSTYPE union yyunion
+//extern YYSTYPE yylval;
+YYSTYPE yylval;
 }
 
-digits	[0-9]+
-nondigits	[A-Za-z_]+
+    /* https://stackoverflow.com/questions/63785787/flex-regular-expression-for-strings-with-either-single-or-double-quotes */
+string_lit_match	([^"\\\n]|\\(.|\n))*
+c_char_match  ([^'\\\n]|\\(.|\n))* 
 
-string	\"[^\n"]+\""]
+hexadecimal_prefix	^0[xX]{1}
+hexadecimal_digit	[0-9A-Fa-f]+
+hexadecimal_constant    [{hexadecimal_prefix}]|[{hexadecimal_constant}]
+
+octal_prefix ^0
+octal_digit [0-7]*
+octal_constant  [{octal_prefix}]|[{octal_digit}]
+
+nonzero_digit [1-9]*
+decimal_digit  [0-9]*
+decimal_constant    [{nonzero_digit}]|[{decimal_digit}]
+
+unsigned-suffix [uU]$
+long-suffix [lL]$
+long-long-suffix	l{2}$|L{2}$
 
 ident		[_A-Za-z][_A-Za-z0-9]*
 
-	int line_num = 1;
+    int line_num = 1;
 	char yyin_name[4096] = "<stdin>";	
 	char charliteral = '0';
 	char stringval[4096] = "\0";
 
-%x	charlit
+%x  markermode
+%x  markermode_s2
+
+%x	c_char
+
+%x  string_lit
+
+%x	real
+
+%x	hex
+%x	oct
+%x	decimal
+
 %x	comment
 
 %%
@@ -88,8 +138,8 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 "|="		{return	OREQ;}
 "^="		{return	XOREQ;}
 
-"["		{return '[';}
-"]"		{return ']';}
+\[		{return '[';}
+\]		{return ']';}
 "("		{return '(';}
 ")"		{return ')';}
 "{"		{return '{';}
@@ -111,8 +161,29 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 ":"		{return ':';}
 ";"		{return ';';}
 ","		{return ',';}
-"#"		{return '#';}
+    
+    /* marker mode */
 
+"# "		{BEGIN(markermode);}
+    /* stage 1 - mark line no */
+<markermode>[0-9]  {
+    line_num = strtol(yytext, NULL, 10);
+    BEGIN(markermode_s2);
+}
+    /* stage 2 - mark file name */
+<markermode_s2>" "  
+
+<markermode_s2>{string_lit_match}  {
+    strncpy(yyin_name, yytext, 4096);
+}
+
+<markermode_s2>\"  
+
+<markermode_s2>[ \t\n ]+  {
+    BEGIN(INITIAL);
+}
+
+    /* commenst */
 
 "/*"	BEGIN(comment);
 
@@ -121,9 +192,80 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 <comment>\n				++line_num;
 <comment>"*"+"/"		BEGIN(INITIAL);
 
-{digits}		{return	NUMBER;}
 
-{ident}			{return IDENT;}
+	/* charlits */
+    /* todo:*/
+    /* work on detecting chars that exceed size */
+
+"'"  {
+    BEGIN(c_char);
+}
+
+    /* handle escape sequences */
+<c_char>{c_char_match}   {
+    yylval.s = strdup(yytext);
+}
+
+<c_char>"'" {
+    BEGIN(INITIAL);
+    return CHARLIT;
+}
+
+    /* strings */
+    /* todo */
+    /* work on expanding octal and hex */
+
+\"  {
+    BEGIN(string_lit);
+}
+
+<string_lit>{string_lit_match}  {
+    yylval.s = strdup(yytext);
+}
+
+<string_lit>\"  {
+    BEGIN(INITIAL);
+    return STRING;
+}
+
+	/* integers */
+
+{decimal_digit} {
+    yylval.lld = strtol(yytext, NULL, 10);
+    return NUMBER;
+}
+
+{octal_prefix}  {
+    BEGIN(oct);
+}
+
+<oct>{octal_digit}  { 
+    yylval.lld = strtol(yytext, NULL, 8);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
+{hexadecimal_prefix}   {
+	BEGIN(hex);
+}
+
+<hex>{hexadecimal_digit}	{
+	yylval.lld = strtol(yytext, NULL, 16);
+	BEGIN(INITIAL);
+	return NUMBER;
+}
+
+<hex>.	{
+	fprintf(stderr, \
+"%s: Unrecognized hex number at line %d: %s\n", yyin_name, line_num, yytext);
+	BEGIN(INITIAL);
+}
+
+    /* identifier */
+{ident}		{
+    yylval.s = strdup(yytext);
+    return IDENT;
+}
 
 [ \t\n ]+	++line_num;
 .			{fprintf(stderr, \
@@ -150,22 +292,41 @@ int main(int argc, char* argv[])
 	while(t = yylex())
 	{
 		char *token_id = get_token_id(t);
-		strncpy(text, yytext, 256);
 		
 		switch(t){
+			case NUMBER:
+				printf("%s\t%d\t%s\t%lld\n", 
+					yyin_name, 
+					line_num, 
+					token_id,
+					yylval.lld);
+				break;
 			case CHARLIT:
 				printf("%s\t%d\t%s\t%s\n", 
 					yyin_name, 
 					line_num, 
 					token_id,
-					charliteral);
+					yylval.s);
 				break;
-			default:
+			case STRING:
 				printf("%s\t%d\t%s\t%s\n", 
 					yyin_name, 
 					line_num, 
 					token_id,
-					text);
+					yylval.s);
+				break;
+            case IDENT:
+                printf("%s\t%d\t%s\t%s\n", 
+					yyin_name, 
+					line_num, 
+					token_id,
+                    yylval.s);
+            default:
+				printf("%s\t%d\t%s\t%s\n", 
+					yyin_name, 
+					line_num, 
+					token_id,
+                    yytext);
 				break;	
 		}
 	}

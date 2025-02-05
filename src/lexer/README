@@ -1,0 +1,4 @@
+to build
+    run ./build.sh
+to run hak tests
+    run ./hakrun.sh
