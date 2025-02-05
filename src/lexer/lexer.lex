@@ -3,15 +3,26 @@
 
 %option yylineno
 %option noyywrap
+%array
 %top{
 #include <string.h>
 
 #include "lex_utils.h"
 #include "tokens.h"
 
+// yytext %array size
+#define YYLMAX 4096
+
 // mega-mega-kludge
 
-union yyunion
+#define U_BIT 1
+#define L_BIT 2
+#define LL_BIT 4
+#define D_BIT 8
+#define DL_BIT 16
+
+struct yy_struct{
+union 
 {
 	// integer
 	int d;
@@ -27,8 +38,17 @@ union yyunion
 	//	charlit, ident or string
 	char *s;
 };
+int tags;
+/*  bit meaning (1 is true)
+    0   unsigned
+    1   long
+    2   long long   (XOR bit 1)
+    3   double
+    4   long double
+*/
+};
 
-#define YYSTYPE union yyunion
+#define YYSTYPE  struct yy_struct
 //extern YYSTYPE yylval;
 YYSTYPE yylval;
 }
@@ -41,13 +61,13 @@ hexadecimal_prefix	^0[xX]{1}
 hexadecimal_digit	[0-9A-Fa-f]+
 hexadecimal_constant	[{hexadecimal_prefix}]|[{hexadecimal_constant}]
 
-octal_prefix ^0
-octal_digit [0-7]*
-octal_constant	[{octal_prefix}]|[{octal_digit}]
+octal_prefix ^[0]+
+octal_digit [0-7]+
+octal_constant	[{octal_prefix}]|[{octal_digit}]+
 
-nonzero_digit [1-9]*
-decimal_digit  [0-9]*
-decimal_constant	[{nonzero_digit}]|[{decimal_digit}]
+nonzero_digit [1-9]
+decimal_digit  [0-9]
+decimal_constant	[{nonzero_digit}]|[{decimal_digit}]+
 
 unsigned-suffix [uU]$
 long-suffix [lL]$
@@ -59,6 +79,11 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 	char yyin_name[4096] = "<stdin>";	
 	char charliteral = '0';
 	char stringval[4096] = "\0";
+    
+    char string_buf[4096];
+    char *string_buf_ptr;
+
+
 
 %x	markermode
 %x	markermode_s2
@@ -71,7 +96,7 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 
 %x	hex
 %x	oct
-%x	decimal
+%x	dec
 
 %x	comment
 
@@ -212,55 +237,142 @@ ident		[_A-Za-z][_A-Za-z0-9]*
 }
 
 	/* strings */
-	/* todo */
-	/* work on expanding octal and hex */
+    /* shamelessly ripped from Flex manual */
 
 \"	{
+    string_buf_ptr = string_buf;
 	BEGIN(string_lit);
-}
-
-<string_lit>{string_lit_match}	{
-	yylval.s = strdup(yytext);
 }
 
 <string_lit>\"	{
 	BEGIN(INITIAL);
-	return STRING;
+    *string_buf_ptr = '\0';
+    yylval.s = strdup(string_buf);
+
+    return STRING;
+}
+
+<string_lit>[ \t\n ]+	{
+	fprintf(stderr, \
+"%s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
+	exit(-1);
+}
+
+<string_lit>\\^0[0-7]{1,3}	{/* octal escape sequence */
+	int result;
+
+	(void) sscanf( yytext + 1, "%o", &result );
+
+	if ( result > 0xff )
+	{
+		fprintf(stderr, \
+    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+	    exit(-1);	
+	}
+
+	*string_buf_ptr++ = result;
+}
+
+<string_lit>\\[0-9A-Za-z]{1,2}	{/* hex escape sequence */
+	int result;
+
+	(void) sscanf( yytext + 1, "%x", &result );
+
+	if ( result > 0xff )
+	{
+		fprintf(stderr, \
+    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+	    exit(-1);	
+	}
+
+	*string_buf_ptr++ = result;
+}
+
+<string_lit>\\(.|\n)  *string_buf_ptr++ = yytext[1];
+
+<string_lit>[^\\\n\"]+ {
+    char *yptr = yytext;
+
+    while ( *yptr )
+        *string_buf_ptr++ = *yptr++;
 }
 
 	/* integers */
 
-{decimal_digit} {
-	yylval.lld = strtol(yytext, NULL, 10);
-	return NUMBER;
-}
-
-{octal_prefix}	{
+^[0]+[0-7]*	{ 
+	yylval.lld = strtol(yytext, NULL, 8);
 	BEGIN(oct);
 }
 
-<oct>{octal_digit}	{ 
-	yylval.lld = strtol(yytext, NULL, 8);
-	BEGIN(INITIAL);
-	return NUMBER;
+[+-]?[0-9]+ {
+    BEGIN(dec);
+    if(yytext[0] == '-'){
+        yylval.lld = (long long int) strtol(&(yytext[1]), NULL, 10);
+        yylval.lld *= -1;
+    } else if(yytext[0] == '+'){
+        yylval.lld = (long long int) strtol(&(yytext[1]), NULL, 10);
+    } else {
+        yylval.lld = (long long int) strtol(yytext, NULL, 10);
+    }
 }
 
-{hexadecimal_prefix}   {
+^0[xX]{1}[0-9A-Fa-f]+   {
+	yylval.lld = strtol(yytext, NULL, 16);
 	BEGIN(hex);
 }
 
-<hex>{hexadecimal_digit}	{
-	yylval.lld = strtol(yytext, NULL, 16);
-	BEGIN(INITIAL);
-	return NUMBER;
+
+<dec,oct,hex>"LLU"$ {
+    yylval.ulld = (unsigned long long int) yylval.lld;
+    yylval.tags |= (LL_BIT | U_BIT);
+    BEGIN(INITIAL);
+    return NUMBER;
 }
+
+<dec,oct,hex>"LU"$  {
+    yylval.uld = (unsigned long int) yylval.lld;
+    yylval.tags |= (L_BIT | U_BIT);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
+<dec,oct,hex>"LL"$  {
+    yylval.tags |= (LL_BIT);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
+<dec,oct,hex>"L"$  {
+    yylval.ld = (long int) yylval.lld;
+    yylval.tags |= (L_BIT);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
+<dec,oct,hex>"U"$  {
+    yylval.ud = (unsigned int) yylval.lld;
+    yylval.tags |= (U_BIT);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
+<dec,oct,hex>[^LU]   {
+    yylval.d = (int) yylval.lld;
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
 
 <hex>.	{
 	fprintf(stderr, \
 "%s: Unrecognized hex number at line %d: %s\n", yyin_name, line_num, yytext);
 	BEGIN(INITIAL);
 }
-
+<oct>.	{
+	fprintf(stderr, \
+"%s: Unrecognized octal number at line %d: %s\n", yyin_name, line_num, yytext);
+	BEGIN(INITIAL);
+}
 	/* identifier */
 {ident}		{
 	yylval.s = strdup(yytext);
@@ -321,6 +433,7 @@ int main(int argc, char* argv[])
 					line_num, 
 					token_id,
 					yylval.s);
+                break;
 			default:
 				printf("%s\t%d\t%s\t%s\n", 
 					yyin_name, 
