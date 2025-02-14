@@ -25,11 +25,11 @@ struct yy_struct{
 union 
 {
     // integer
-    int d;
-    unsigned int ud;
-    long int ld;
-    unsigned long int uld;
-    long long lld;
+//    int d;
+//    unsigned int ud;
+//    long int ld;
+//    unsigned long int uld;
+//    long long lld;
     unsigned long long int ulld;
     //  real
     float f;
@@ -51,6 +51,16 @@ int tags;
 #define YYSTYPE  struct yy_struct
 //extern YYSTYPE yylval;
 YYSTYPE yylval;
+
+
+int line_num = 1;
+char yyin_name[4096] = "<stdin>";   
+char charliteral = '0';
+char stringval[4096] = "\0";
+
+char string_buf[4096];
+char *string_buf_ptr;
+
 }
 
     /* https://stackoverflow.com/questions/63785787/flex-regular-expression-for-strings-with-either-single-or-double-quotes */
@@ -75,15 +85,7 @@ long-long-suffix    l{2}$|L{2}$
 
 ident       [_A-Za-z][_A-Za-z0-9]*
 
-    int line_num = 1;
-    char yyin_name[4096] = "<stdin>";   
-    char charliteral = '0';
-    char stringval[4096] = "\0";
-    
-    char string_buf[4096];
-    char *string_buf_ptr;
-
-
+    // start conditions
 
 %x  markermode
 %x  markermode_s2
@@ -97,8 +99,6 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 %x  hex
 %x  oct
 %x  dec
-
-%x  comment
 
 %%
 
@@ -191,8 +191,9 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 "# "        {BEGIN(markermode);}
     /* stage 1 - mark line no */
+	/* this is broken */
 <markermode>[0-9]  {
-    line_num = strtol(yytext, NULL, 10);
+    line_num = strtoull(yytext, NULL, 10);
     BEGIN(markermode_s2);
 }
     /* stage 2 - mark file name */
@@ -207,16 +208,6 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 <markermode_s2>[ \t\n ]+  {
     BEGIN(INITIAL);
 }
-
-    /* commenst */
-
-"/*"    BEGIN(comment);
-
-<comment>[^*\n]*        /* eat any non-stars*/
-<comment>"*"+[^*/\n]*   /* eat any stars not followed by forward slash*/
-<comment>\n             ++line_num;
-<comment>"*"+"/"        BEGIN(INITIAL);
-
 
     /* charlits */
     /* todo:*/
@@ -308,37 +299,29 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     /*as you can tell, this was a rushed one.                           */ 
 
 ^[0]+[0-7]* { 
-    yylval.lld = strtol(yytext, NULL, 8);
+    yylval.ulld = strtoull(yytext, NULL, 8);
     BEGIN(oct);
 }
 
-[+-]?[0-9]+ {
+[0-9]+[UL]* {
     BEGIN(dec);
-    if(yytext[0] == '-'){
-        yylval.lld = (long long int) strtol(&(yytext[1]), NULL, 10);
-        yylval.lld *= -1;
-    } else if(yytext[0] == '+'){
-        yylval.lld = (long long int) strtol(&(yytext[1]), NULL, 10);
-    } else {
-        yylval.lld = (long long int) strtol(yytext, NULL, 10);
-    }
+    yylval.ulld = (long long int) strtoull(yytext, NULL, 10);
 }
 
-^0[xX]{1}[0-9A-Fa-f]+   {
-    yylval.lld = strtol(yytext, NULL, 16);
-    BEGIN(hex);
-}
 
+^0[xX]{1}[0-9A-Fa-f]+[UL]*   {
+    yylval.ulld = strtoull(yytext, NULL, 16);
+    ECHO;
+	BEGIN(hex);
+}
 
 <dec,oct,hex>"LLU"$ {
-    yylval.ulld = (unsigned long long int) yylval.lld;
     yylval.tags |= (LL_BIT | U_BIT);
     BEGIN(INITIAL);
     return NUMBER;
 }
 
 <dec,oct,hex>"LU"$  {
-    yylval.uld = (unsigned long int) yylval.lld;
     yylval.tags |= (L_BIT | U_BIT);
     BEGIN(INITIAL);
     return NUMBER;
@@ -351,21 +334,18 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
 <dec,oct,hex>"L"$  {
-    yylval.ld = (long int) yylval.lld;
     yylval.tags |= (L_BIT);
     BEGIN(INITIAL);
     return NUMBER;
 }
 
 <dec,oct,hex>"U"$  {
-    yylval.ud = (unsigned int) yylval.lld;
     yylval.tags |= (U_BIT);
     BEGIN(INITIAL);
     return NUMBER;
 }
 
-<dec,oct,hex>[^LU]   {
-    yylval.d = (int) yylval.lld;
+<dec,oct,hex>.   {
     BEGIN(INITIAL);
     return NUMBER;
 }
@@ -419,7 +399,7 @@ int main(int argc, char* argv[])
                     yyin_name, 
                     line_num, 
                     token_id,
-                    yylval.lld);
+                    yylval.ulld);
                 break;
             case CHARLIT:
                 printf("%s\t%d\t%s\t%s\n", 
