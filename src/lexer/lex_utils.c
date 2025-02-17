@@ -1,10 +1,47 @@
+#include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 
+#include "lexer.lex.h"
 #include "tokens.h"
 
-// not async safe -- uses the same static variable to return the identifier
-char *get_token_id(int token_code) {
+unsigned int tagparse(char* yytext)
+{
+    char *numberlit = yytext + strlen(yytext) - 1;
+    unsigned int tags = 0;
+
+    while(numberlit >= yytext)
+    {
+        switch(*numberlit)
+        {
+            case 'U':
+            u_suffix:
+                tags |= U_BIT;
+                break;
+            case 'u':
+                goto u_suffix;
+            case 'L':
+            l_suffix:
+                if((tags &= L_BIT) == L_BIT)
+                {
+                    tags |= LL_BIT;
+                    tags &= ~(L_BIT);
+                    break;
+                }
+                tags |= L_BIT;
+                break;
+            case 'l':
+                goto l_suffix;
+            default:
+                return tags;
+        }
+        numberlit--;
+    }
+}
+
+// Simple switch-case map to find corresponding string code for a token
+char *get_token_id(int token_code) 
+{
     static char id[16];
 
     if(token_code > IMAGINARY) {
@@ -12,7 +49,7 @@ char *get_token_id(int token_code) {
     }
 
     switch(token_code) {
-    	case TOKEOF:
+        case TOKEOF:
         case IDENT:
             strncpy(id, "IDENT", 16);
             break;
@@ -208,7 +245,7 @@ char *get_token_id(int token_code) {
                 id[0] = (char) token_code;
             }
             else
-                strncpy(id, "JOEVER!", 16);
+                snprintf(id, 16, "%d", token_code);
             break;
     }
     return id;

@@ -5,46 +5,32 @@
 %option noyywrap
 %array
 %top{
+#include <ctype.h>
 #include <string.h>
 
+#include "lexer.lex.h"
 #include "lex_utils.h"
 #include "tokens.h"
-
-// yytext %array size
-#define YYLMAX 4096
-
-// mega-mega-kludge
-
-#define U_BIT 1
-#define L_BIT 2
-#define LL_BIT 4
-#define D_BIT 8
-#define DL_BIT 16
 
 struct yy_struct{
 union 
 {
     // integer
-//    int d;
-//    unsigned int ud;
-//    long int ld;
-//    unsigned long int uld;
-//    long long lld;
     unsigned long long int ulld;
     //  real
-    float f;
-    double df;
     long double ldf;
     //  charlit, ident or string
     char *s;
 };
-int tags;
+unsigned int tags;
 /*  bit meaning (1 is true)
     0   unsigned
     1   long
     2   long long   (XOR bit 1)
     3   double
     4   long double
+    5   invalid
+    6   floating
 */
 };
 
@@ -191,7 +177,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 "# "        {BEGIN(markermode);}
     /* stage 1 - mark line no */
-	/* this is broken */
+    /* this is broken */
 <markermode>[0-9]  {
     line_num = strtoull(yytext, NULL, 10);
     BEGIN(markermode_s2);
@@ -211,24 +197,25 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
     /* charlits */
     /* todo:*/
-    /* work on detecting chars that exceed size */
+    /* figure out how to display "\0" like c wants???? */
 
 "'"  {
+    string_buf_ptr = string_buf;
     BEGIN(c_char);
 }
 
-    /* handle escape sequences */
-<c_char>{c_char_match}   {
-    yylval.s = strdup(yytext);
-}
-
 <c_char>"'" {
+    if(strlen(string_buf) > 1){
+        fprintf(stderr,
+"\n%s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
+    }
+    
+    string_buf[1] = '\0';
+    yylval.s = strdup(string_buf);
+    
     BEGIN(INITIAL);
     return CHARLIT;
 }
-
-    /* strings */
-    /* shamelessly ripped from Flex manual */
 
 \"  {
     string_buf_ptr = string_buf;
@@ -236,50 +223,85 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
 <string_lit>\"  {
-    BEGIN(INITIAL);
     *string_buf_ptr = '\0';
     yylval.s = strdup(string_buf);
 
+    BEGIN(INITIAL);
     return STRING;
 }
 
-<string_lit>[ \t\n ]+   {
+
+<c_char,string_lit>\\0[0-7]{1,3}  {/* octal escape sequence */
+    unsigned long long int result;
+    result = strtoull(yytext + 1, NULL, 8);
+
+    if ( result > 0xff )
+    {
+        fprintf(stderr, \
+    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+        exit(-1);   
+    }
+
+    *string_buf_ptr++ = result;
+}
+
+<c_char,string_lit>\\[xX]{1}[0]*[0-9A-Za-z]{1,2}  {/* hex escape sequence */
+    unsigned long long int result;
+    result = strtoull(yytext + 2, NULL, 16);
+
+    if ( result > 0xff )
+    {
+        fprintf(stderr, \
+    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+        exit(-1);   
+    }
+
+    *string_buf_ptr++ = result;
+}
+
+<c_char,string_lit>\\(.|\n)  { 
+    switch(yytext[1])
+    {
+        case '0':
+            *string_buf_ptr++ = '\0';
+        case 'a':
+            *string_buf_ptr++ = '\a';
+            break;
+        case 'b': 
+            *string_buf_ptr++ = '\b';
+            break;
+        case 'f':
+            *string_buf_ptr++ = '\f';
+            break;
+        case 'n':
+            *string_buf_ptr++ = '\n';
+            break;
+        case 'r':
+            *string_buf_ptr++ = '\r';
+            break;
+        case 't':
+            *string_buf_ptr++ = '\t';
+            break;
+        case 'v':
+            *string_buf_ptr++ = '\v';
+            break;
+        default:    /* copy literal value */
+            *string_buf_ptr++ = yytext[1];
+    }
+}
+
+<c_char,string_lit>[\n]+   {
     fprintf(stderr, \
 "%s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
     exit(-1);
 }
 
-<string_lit>\\^0[0-7]{1,3}  {/* octal escape sequence */
-    int result;
+<c_char>[^\\\n\']+ {
+    char *yptr = yytext;
 
-    (void) sscanf( yytext + 1, "%o", &result );
-
-    if ( result > 0xff )
-    {
-        fprintf(stderr, \
-    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
-        exit(-1);   
-    }
-
-    *string_buf_ptr++ = result;
+    while ( *yptr )
+        *string_buf_ptr++ = *yptr++;
 }
-
-<string_lit>\\[0-9A-Za-z]{1,2}  {/* hex escape sequence */
-    int result;
-
-    (void) sscanf( yytext + 1, "%x", &result );
-
-    if ( result > 0xff )
-    {
-        fprintf(stderr, \
-    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
-        exit(-1);   
-    }
-
-    *string_buf_ptr++ = result;
-}
-
-<string_lit>\\(.|\n)  *string_buf_ptr++ = yytext[1];
 
 <string_lit>[^\\\n\"]+ {
     char *yptr = yytext;
@@ -288,79 +310,28 @@ ident       [_A-Za-z][_A-Za-z0-9]*
         *string_buf_ptr++ = *yptr++;
 }
 
+
     /* integers */
 
-    /* HAK -- is it ok to start at the largest primitive (eg long long) */
-    /*and work my way down to the datatype i need to be at based on the */ 
-    /*L, U declarations?
-
-    /*This feels hacky and also like i will lose precision.             */
-
-    /*as you can tell, this was a rushed one.                           */ 
-
-^[0]+[0-7]* { 
+[0]+[0-7]* { 
     yylval.ulld = strtoull(yytext, NULL, 8);
-    BEGIN(oct);
+    yylval.tags = tagparse(yytext);
+    return NUMBER;
 }
 
-[0-9]+[UL]* {
-    BEGIN(dec);
-    yylval.ulld = (long long int) strtoull(yytext, NULL, 10);
+[1-9]+[0-9]*[Uu]{0,1}[Ll]{0,2} {
+    yylval.ulld = strtoull(yytext, NULL, 10);
+    yylval.tags = tagparse(yytext);
+    return NUMBER;
 }
 
 
-^0[xX]{1}[0-9A-Fa-f]+[UL]*   {
+0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {
     yylval.ulld = strtoull(yytext, NULL, 16);
-    ECHO;
-	BEGIN(hex);
-}
-
-<dec,oct,hex>"LLU"$ {
-    yylval.tags |= (LL_BIT | U_BIT);
-    BEGIN(INITIAL);
+    yylval.tags = tagparse(yytext);
     return NUMBER;
 }
 
-<dec,oct,hex>"LU"$  {
-    yylval.tags |= (L_BIT | U_BIT);
-    BEGIN(INITIAL);
-    return NUMBER;
-}
-
-<dec,oct,hex>"LL"$  {
-    yylval.tags |= (LL_BIT);
-    BEGIN(INITIAL);
-    return NUMBER;
-}
-
-<dec,oct,hex>"L"$  {
-    yylval.tags |= (L_BIT);
-    BEGIN(INITIAL);
-    return NUMBER;
-}
-
-<dec,oct,hex>"U"$  {
-    yylval.tags |= (U_BIT);
-    BEGIN(INITIAL);
-    return NUMBER;
-}
-
-<dec,oct,hex>.   {
-    BEGIN(INITIAL);
-    return NUMBER;
-}
-
-
-<hex>.  {
-    fprintf(stderr, \
-"%s: Unrecognized hex number at line %d: %s\n", yyin_name, line_num, yytext);
-    BEGIN(INITIAL);
-}
-<oct>.  {
-    fprintf(stderr, \
-"%s: Unrecognized octal number at line %d: %s\n", yyin_name, line_num, yytext);
-    BEGIN(INITIAL);
-}
     /* identifier */
 {ident}     {
     yylval.s = strdup(yytext);
@@ -393,40 +364,95 @@ int main(int argc, char* argv[])
     {
         char *token_id = get_token_id(t);
         
+        printf("%s\t%d\t%s\t",
+            yyin_name,
+            line_num,
+            token_id);
+
         switch(t){
             case NUMBER:
-                printf("%s\t%d\t%s\t%lld\n", 
+                printf("%s\t%d\t%s\t", 
                     yyin_name, 
                     line_num, 
-                    token_id,
-                    yylval.ulld);
+                    token_id);
+                if(IS_INVAL(yylval.tags))
+                {
+                    printf( "INVALID\n");
+                    break;
+                }
+                if(IS_FLOATING(yylval.tags))
+                {
+                    printf(" REAL %Lg ", yylval.ldf);
+                }
+                else printf(" INTEGER %lld ", yylval.ulld);
+                if(IS_UNSIGNED(yylval.tags))
+                {
+                    printf(" UNSIGNED ");
+                }
+                if(IS_LONG(yylval.tags))
+                {
+                    printf(" LONG ");
+                }
+                if(IS_LLONG(yylval.tags))
+                {
+                    printf(" LONG LONG ");
+                }
+                if(IS_DOUBLE(yylval.tags))
+                {
+                    printf(" DOUBLE ");
+                }
+                if(IS_DOUBLONG(yylval.tags))
+                {
+                    printf(" LONG DOUBLE ");
+                }
+                printf("\n");
                 break;
             case CHARLIT:
-                printf("%s\t%d\t%s\t%s\n", 
-                    yyin_name, 
-                    line_num, 
-                    token_id,
-                    yylval.s);
+                switch(yylval.s[0])
+                {
+                    case 0:
+                        printf("%s", "\\0");
+                        break;
+                    case '\a':
+                        printf("%s", "\\a");
+                        break;
+                    case '\b': 
+                        printf("%s", "\\b");
+                        break;
+                    case '\f':
+                        printf("%s", "\\f");
+                        break;
+                    case '\n':
+                        printf("%s", "\\n");
+                        break;
+                    case '\r':
+                        printf("%s", "\\r");
+                        break;
+                    case '\t':
+                        printf("%s", "\\t");
+                        break;
+                    case '\v':
+                        printf("%s", "\\v");
+                        break;
+                    default:
+                        if(isprint(yylval.s[0]))
+                        {
+                            printf("%c", yylval.s[0]);
+                        }
+                        else printf("\\%03o", yylval.s[0]);
+                }
+                printf("\n");
                 break;
             case STRING:
-                printf("%s\t%d\t%s\t%s\n", 
-                    yyin_name, 
-                    line_num, 
-                    token_id,
+                printf("%s\n", 
                     yylval.s);
                 break;
             case IDENT:
-                printf("%s\t%d\t%s\t%s\n", 
-                    yyin_name, 
-                    line_num, 
-                    token_id,
+                printf("%s\n", 
                     yylval.s);
                 break;
             default:
-                printf("%s\t%d\t%s\t%s\n", 
-                    yyin_name, 
-                    line_num, 
-                    token_id,
+                printf("%s\n", 
                     yytext);
                 break;  
         }
