@@ -29,23 +29,6 @@ char *string_start;
 
     /* https://stackoverflow.com/questions/63785787/flex-regular-expression-for-strings-with-either-single-or-double-quotes */
 string_lit_match    ([^"\\\n]|\\(.|\n))*
-    //c_char_match  ([^'\\\n]|\\(.|\n))* 
-
-    //hexadecimal_prefix  ^0[xX]{1}
-    //hexadecimal_digit   [0-9A-Fa-f]+
-    //hexadecimal_constant    [{hexadecimal_prefix}]|[{hexadecimal_constant}]
-    //
-    //octal_prefix ^[0]+
-    //octal_digit [0-7]+
-    //octal_constant  [{octal_prefix}]|[{octal_digit}]+
-    //
-    //nonzero_digit [1-9]
-    //decimal_digit  [0-9]
-    //decimal_constant    [{nonzero_digit}]|[{decimal_digit}]+
-    //
-    //unsigned-suffix [uU]$
-    //long-suffix [lL]$
-    //long-long-suffix    l{2}$|L{2}$
 
 ident       [_A-Za-z][_A-Za-z0-9]*
 
@@ -155,7 +138,6 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 "# "        {BEGIN(markermode);}
     /* stage 1 - mark line no */
-    /* this is broken */
 <markermode>[0-9]  {
     line_num = strtoull(yytext, NULL, 10);
     BEGIN(markermode_s2);
@@ -169,7 +151,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 <markermode_s2>\"  
 
-<markermode_s2>[ \t\n ]+  {
+<markermode_s2>[ \n ]+  {
     BEGIN(INITIAL);
 }
 
@@ -323,7 +305,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     return IDENT;
 }
 
-[ \n ]+   ++line_num;
+[\n]+   ++line_num;
+[  ]+   
 .           {fprintf(stderr, \
 "%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }

@@ -6,7 +6,7 @@ SRC=src
 
 all: lex_obj
 
-lex_obj: src/lexer/lex.yy.c src/lexer/lex_utils.c
+lex_obj: src/lexer/lex_utils.c
 	$(LEX) -o src/lexer/lex.yy.c src/lexer/lexer.lex
 	$(CC) $(CFLAGS) -c src/lexer/lex.yy.c -o lex.yy.o
 	$(CC) $(CFLAGS) -c src/lexer/lex_utils.c -o lex_utils.o
