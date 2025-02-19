@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "lexer.lex.h"
-#include "tokens.h"
+#include <lexer/lexer.lex.h>
+#include <lexer/tokens.h>
 
 // prints a char if we can print it -- debug purposes.
 // otherwise, spit out a code
@@ -92,6 +92,8 @@ char *get_token_id(int token_code)
 
     switch(token_code) {
         case TOKEOF:
+            strncpy(id, "TOKEOF", 16);
+            break;
         case IDENT:
             strncpy(id, "IDENT", 16);
             break;

@@ -1,3 +1,5 @@
+#ifndef __TOKENS_H_JR
+#define __TOKENS_H_JR
 enum tokens {
 	TOKEOF=0,
 	IDENT=257,	/* This is where yacc will put it */
@@ -64,3 +66,4 @@ enum tokens {
 	COMPLEX,
 	IMAGINARY
 };
+#endif

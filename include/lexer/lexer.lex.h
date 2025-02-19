@@ -32,7 +32,7 @@ union
     char *s;
 };
 
-size_t s_len;   // Only used for strings
+int s_len;   // Only used for strings
 unsigned int tags;
 /*  bit meaning (1 is true)
     0   unsigned

@@ -8,9 +8,9 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "lexer.lex.h"
-#include "lex_utils.h"
-#include "tokens.h"
+#include <lexer/lexer.lex.h>
+#include <lexer/lex_utils.h>
+#include <lexer/tokens.h>
 
 // yy_struct is defined in lexer.lex.h
 // todo: move this to belong in src/parser
