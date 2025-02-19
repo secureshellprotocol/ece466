@@ -20,4 +20,29 @@
 #define IS_INVAL(tag) ((tag & INVAL_BIT) == INVAL_BIT)
 #define IS_FLOATING(tag) ((tag & FL_BIT) == FL_BIT)
 
+
+struct yy_struct{
+union 
+{
+    // integer
+    unsigned long long int ulld;
+    //  real
+    long double ldf;
+    //  charlit, ident or string
+    char *s;
+};
+
+size_t s_len;   // Only used for strings
+unsigned int tags;
+/*  bit meaning (1 is true)
+    0   unsigned
+    1   long
+    2   long long   (XOR bit 1)
+    3   double
+    4   long double
+    5   invalid
+    6   floating
+*/
+};
+
 #endif

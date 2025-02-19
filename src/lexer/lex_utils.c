@@ -1,9 +1,49 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 
 #include "lexer.lex.h"
 #include "tokens.h"
+
+// prints a char if we can print it -- debug purposes.
+// otherwise, spit out a code
+void chardecode(char input)
+{
+    switch(input)
+    {
+        case '\0':
+            printf("%s", "\\0");
+            break;
+        case '\a':
+            printf("%s", "\\a");
+            break;
+        case '\b': 
+            printf("%s", "\\b");
+            break;
+        case '\f':
+            printf("%s", "\\f");
+            break;
+        case '\n':
+            printf("%s", "\\n");
+            break;
+        case '\r':
+            printf("%s", "\\r");
+            break;
+        case '\t':
+            printf("%s", "\\t");
+            break;
+        case '\v':
+            printf("%s", "\\v");
+            break;
+        default:
+            if(isprint(input))
+            {
+                printf("%c", input);
+            }
+            else printf("\\%03o", input);
+    }
+}
 
 unsigned int tagparse(char* yytext)
 {
@@ -37,6 +77,8 @@ unsigned int tagparse(char* yytext)
         }
         numberlit--;
     }
+
+    return tags;
 }
 
 // Simple switch-case map to find corresponding string code for a token

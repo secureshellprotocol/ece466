@@ -12,32 +12,10 @@
 #include "lex_utils.h"
 #include "tokens.h"
 
-struct yy_struct{
-union 
-{
-    // integer
-    unsigned long long int ulld;
-    //  real
-    long double ldf;
-    //  charlit, ident or string
-    char *s;
-};
-unsigned int tags;
-/*  bit meaning (1 is true)
-    0   unsigned
-    1   long
-    2   long long   (XOR bit 1)
-    3   double
-    4   long double
-    5   invalid
-    6   floating
-*/
-};
-
+// yy_struct is defined in lexer.lex.h
+// todo: move this to belong in src/parser
 #define YYSTYPE  struct yy_struct
-//extern YYSTYPE yylval;
 YYSTYPE yylval;
-
 
 int line_num = 1;
 char yyin_name[4096] = "<stdin>";   
@@ -46,28 +24,28 @@ char stringval[4096] = "\0";
 
 char string_buf[4096];
 char *string_buf_ptr;
-
+char *string_start;
 }
 
     /* https://stackoverflow.com/questions/63785787/flex-regular-expression-for-strings-with-either-single-or-double-quotes */
 string_lit_match    ([^"\\\n]|\\(.|\n))*
-c_char_match  ([^'\\\n]|\\(.|\n))* 
+    //c_char_match  ([^'\\\n]|\\(.|\n))* 
 
-hexadecimal_prefix  ^0[xX]{1}
-hexadecimal_digit   [0-9A-Fa-f]+
-hexadecimal_constant    [{hexadecimal_prefix}]|[{hexadecimal_constant}]
-
-octal_prefix ^[0]+
-octal_digit [0-7]+
-octal_constant  [{octal_prefix}]|[{octal_digit}]+
-
-nonzero_digit [1-9]
-decimal_digit  [0-9]
-decimal_constant    [{nonzero_digit}]|[{decimal_digit}]+
-
-unsigned-suffix [uU]$
-long-suffix [lL]$
-long-long-suffix    l{2}$|L{2}$
+    //hexadecimal_prefix  ^0[xX]{1}
+    //hexadecimal_digit   [0-9A-Fa-f]+
+    //hexadecimal_constant    [{hexadecimal_prefix}]|[{hexadecimal_constant}]
+    //
+    //octal_prefix ^[0]+
+    //octal_digit [0-7]+
+    //octal_constant  [{octal_prefix}]|[{octal_digit}]+
+    //
+    //nonzero_digit [1-9]
+    //decimal_digit  [0-9]
+    //decimal_constant    [{nonzero_digit}]|[{decimal_digit}]+
+    //
+    //unsigned-suffix [uU]$
+    //long-suffix [lL]$
+    //long-long-suffix    l{2}$|L{2}$
 
 ident       [_A-Za-z][_A-Za-z0-9]*
 
@@ -197,19 +175,24 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
     /* charlits */
     /* todo:*/
-    /* figure out how to display "\0" like c wants???? */
 
 "'"  {
     string_buf_ptr = string_buf;
+    
+    string_start = string_buf_ptr;
     BEGIN(c_char);
 }
 
 <c_char>"'" {
-    if(strlen(string_buf) > 1){
+    int string_length = (int) (string_buf_ptr - string_start);
+    fprintf(stderr, "\t%d\n\n", string_length);
+    if(string_length > 1){
         fprintf(stderr,
 "\n%s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
-    }
-    
+        
+        yylval.s_len = 1;
+    } else yylval.s_len = string_length;
+
     string_buf[1] = '\0';
     yylval.s = strdup(string_buf);
     
@@ -219,11 +202,14 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 \"  {
     string_buf_ptr = string_buf;
+    
+    string_start = string_buf_ptr;
     BEGIN(string_lit);
 }
 
 <string_lit>\"  {
     *string_buf_ptr = '\0';
+    yylval.s_len = (int) (string_buf_ptr - string_start);
     yylval.s = strdup(string_buf);
 
     BEGIN(INITIAL);
@@ -241,11 +227,10 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
-
     *string_buf_ptr++ = result;
 }
 
-<c_char,string_lit>\\[xX]{1}[0]*[0-9A-Za-z]{1,2}  {/* hex escape sequence */
+<c_char,string_lit>\\[xX]{1}[0-9A-Za-z]{1,2}  {/* hex escape sequence */
     unsigned long long int result;
     result = strtoull(yytext + 2, NULL, 16);
 
@@ -255,7 +240,6 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
-
     *string_buf_ptr++ = result;
 }
 
@@ -264,6 +248,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     {
         case '0':
             *string_buf_ptr++ = '\0';
+            break;
         case 'a':
             *string_buf_ptr++ = '\a';
             break;
@@ -338,13 +323,14 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     return IDENT;
 }
 
-[ \t\n ]+   ++line_num;
+[ \n ]+   ++line_num;
 .           {fprintf(stderr, \
 "%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
 
 %%
 
+#ifdef __LEXER_STANDALONE_H_JR
 int main(int argc, char* argv[])
 {
     ++argv, --argc;  /* skip over program name */
@@ -359,8 +345,7 @@ int main(int argc, char* argv[])
     }
     int t;
     
-    char text[256];
-    while(t = yylex())
+    while( (t = yylex()) )
     {
         char *token_id = get_token_id(t);
         
@@ -371,10 +356,6 @@ int main(int argc, char* argv[])
 
         switch(t){
             case NUMBER:
-                printf("%s\t%d\t%s\t", 
-                    yyin_name, 
-                    line_num, 
-                    token_id);
                 if(IS_INVAL(yylval.tags))
                 {
                     printf( "INVALID\n");
@@ -408,44 +389,15 @@ int main(int argc, char* argv[])
                 printf("\n");
                 break;
             case CHARLIT:
-                switch(yylval.s[0])
-                {
-                    case 0:
-                        printf("%s", "\\0");
-                        break;
-                    case '\a':
-                        printf("%s", "\\a");
-                        break;
-                    case '\b': 
-                        printf("%s", "\\b");
-                        break;
-                    case '\f':
-                        printf("%s", "\\f");
-                        break;
-                    case '\n':
-                        printf("%s", "\\n");
-                        break;
-                    case '\r':
-                        printf("%s", "\\r");
-                        break;
-                    case '\t':
-                        printf("%s", "\\t");
-                        break;
-                    case '\v':
-                        printf("%s", "\\v");
-                        break;
-                    default:
-                        if(isprint(yylval.s[0]))
-                        {
-                            printf("%c", yylval.s[0]);
-                        }
-                        else printf("\\%03o", yylval.s[0]);
-                }
+                chardecode(yylval.s[0]);
                 printf("\n");
                 break;
             case STRING:
-                printf("%s\n", 
-                    yylval.s);
+                for(int i = 0; i < yylval.s_len; i++)
+                {
+                    chardecode(yylval.s[i]);
+                }
+                printf("\n");
                 break;
             case IDENT:
                 printf("%s\n", 
@@ -457,4 +409,8 @@ int main(int argc, char* argv[])
                 break;  
         }
     }
+    return 0;
 }
+#else
+// main is somewhere else.
+#endif
