@@ -8,18 +8,19 @@
 //      xyz=(1024+abc);
 int main()
 {
-    static char buf[16];
-    ast_node *root = create_node((int) '=');
+    ast_node *root = create_node(BINOP);
     
+    root->binop.token = (int) '=';
     root->binop.left = create_node(IDENT);
-    root->binop.left->ident.value = strncpy(buf, "xyz", 16);
+    root->binop.left->ident.value = strdup("xyz");
 
-    root->binop.right = create_node((int) '+');
+    root->binop.right = create_node(BINOP);
+    root->binop.right->binop.token = (int) '+';
     root->binop.right->binop.left = create_node(NUMBER);
     root->binop.right->binop.left->num.ival = 1024;
     root->binop.right->binop.left->num.tags = 0;
     root->binop.right->binop.right = create_node(IDENT);
-    root->binop.right->binop.right->ident.value = strncpy(buf, "abc", 16);
+    root->binop.right->binop.right->ident.value = strdup("abc");
     
     print_from_node(root);        
     

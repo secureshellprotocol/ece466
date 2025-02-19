@@ -9,7 +9,7 @@
 //  inserts a number of spaces equal to the depth of the tree.
 //  think of justifying your indents during grade school -- good times!
 #define JUSTIFY \
-    printf("[%*c]", depth, ' ');
+    printf("%*c", depth+1, ' ');
 
 ast_node *create_node(int ot)
 {
@@ -24,7 +24,7 @@ ast_node *create_node(int ot)
 void print_from_node(ast_node *n)
 {
     static int depth;
-    depth++;
+    ++depth;
 
     JUSTIFY
     switch(n->op_type)

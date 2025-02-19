@@ -1,3 +1,6 @@
+*.o
 *.out
+
 *lex.yy.c
+
 venv/*
