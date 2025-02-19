@@ -292,8 +292,9 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     return NUMBER;
 }
 
-
-0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {
+0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {  /*  reverse doesnt work
+        use a start condition to check if its either U or u, and iether L or l
+            */
     yylval.ulld = strtoull(yytext, NULL, 16);
     yylval.tags = tagparse(yytext);
     return NUMBER;
