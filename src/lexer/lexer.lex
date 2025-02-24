@@ -1,9 +1,7 @@
-
-    /* mid burger lexer -- james ryan */
-
 %option yylineno
 %option noyywrap
 %array
+
 %top{
 #include <ctype.h>
 #include <string.h>
@@ -11,11 +9,10 @@
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
 #include <lexer/tokens.h>
+#include <parser/grammar.tab.h>
 
-// yy_struct is defined in lexer.lex.h
-// todo: move this to belong in src/parser
 #define YYSTYPE  struct yy_struct
-YYSTYPE yylval;
+extern YYSTYPE yylval;
 
 int line_num = 1;
 char yyin_name[4096] = "<stdin>";   
@@ -293,7 +290,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
 0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {  /*  reverse doesnt work
-        use a start condition to check if its either U or u, and iether L or l
+        use a start condition to check if its either U or u, and iether L or lg
             */
     yylval.ulld = strtoull(yytext, NULL, 16);
     yylval.tags = tagparse(yytext);
@@ -306,8 +303,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     return IDENT;
 }
 
-[\n]+   ++line_num;
-[  ]+   
+[\n]+   {++line_num;}
+[ \t]+  {} 
 .           {fprintf(stderr, \
 "%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
