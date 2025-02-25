@@ -10,9 +10,12 @@
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
 
-
+// ease compiler complaints
 int yylex();
 void yyerror(const char *s);
+
+// tree root
+ast_node *root;
 %}
 
 %token IDENT
@@ -79,14 +82,17 @@ void yyerror(const char *s);
 %token COMPLEX
 %token IMAGINARY
 
+%start expression
+
 %%
 
-primary_expression: 
-                  IDENT
+primary_expression:
+                  IDENT 
                   | NUMBER
                   | STRING
                   | CHARLIT
                   | '(' expression ')'
+                  ;
 
 postfix_expression:
                   primary_expression
@@ -95,12 +101,15 @@ postfix_expression:
                   | postfix_expression INDSEL IDENT
                   | postfix_expression PLUSPLUS
                   | postfix_expression MINUSMINUS
+                  ;
+
 
 unary_expression:
                 postfix_expression
                 | PLUSPLUS unary_expression
                 | MINUSMINUS unary_expression
                 | unary_operator cast_expression
+                ;
 
 unary_operator:
               '&'
@@ -109,6 +118,7 @@ unary_operator:
               | '_'
               | '~'
               | '!'
+              ;
 
 /* temporary kludge __ we dont have typing *yet* */
 cast_expression:
@@ -119,16 +129,19 @@ multiplicative_expression:
                          | multiplicative_expression '*' cast_expression
                          | multiplicative_expression '/' cast_expression
                          | multiplicative_expression '%' cast_expression
+                         ;
 
 additive_expression:
                    multiplicative_expression
                    | additive_expression '+' multiplicative_expression
                    | additive_expression '_' multiplicative_expression
+                   ;
 
 shift_expression:
                 additive_expression
                 | shift_expression SHL additive_expression
                 | shift_expression SHR additive_expression
+                ;
 
 relational_expression:
                      shift_expression
@@ -136,42 +149,62 @@ relational_expression:
                      | relational_expression '>' shift_expression
                      | relational_expression LTEQ shift_expression
                      | relational_expression GTEQ shift_expression
+                     ;
 
 equality_expression:
                    relational_expression
                    | equality_expression EQEQ relational_expression
                    | equality_expression NOTEQ relational_expression
+                   ;
 
 and_expression:
               equality_expression
               | and_expression '&' equality_expression
+              ;
 
 xor_expression:
               and_expression
               | xor_expression '^' and_expression
+              ;
 
 or_expression:
              xor_expression
              | or_expression '|' xor_expression
+             ;
 
 logand_expression:
                  or_expression
                  | logand_expression LOGAND or_expression
+                 ;
 
 logor_expression:
                 logand_expression
                 | logor_expression LOGOR logand_expression
+                ;
 
 conditional_expression:
                       logor_expression
                       | logor_expression '?' expression ':' conditional_expression
+                      ;
 
 assignment_expression: 
                      conditional_expression
-                     | unary_expression assignment_operator assignment_expression
+                     | unary_expression assignment_operator
+                     assignment_expression   {
+                        root = create_node(BINOP);
+                        root->binop.token=$2.ulld;
+                        
+                        root->binop.left=$1;
+                        root->binop.right=$3;
+                     }  /* youre being dumb
+                        EVERYTHING SHOUDL GET A NODE CREATED AT A TERMINAL NODE
+                        THEN
+                        EVERYTHING SHOULD JUST BE ASSIGNMENTS FROM HEREIN.
+                        THAT IS WAY SIMPLER */
+                     ;
 
 assignment_operator:
-                   '='
+                   '=' 
                    | TIMESEQ
                    | DIVEQ
                    | MODEQ
@@ -182,10 +215,11 @@ assignment_operator:
                    | ANDEQ
                    | XOREQ
                    | OREQ
+                   ;
 
 expression:
-          assignment_expression
-          | expression ',' assignment_expression
+          assignment_expression ';'
+          ;
 
 
 %%
@@ -193,10 +227,10 @@ expression:
 int main(void)
 {
     yyparse();
+    if(root!=NULL) print_from_node(root);
 }
 
 void yyerror(const char *s)
 {
-    fprintf(stderr, "parser: %s\n", s);
+    fprintf(stderr, "\aparser: %s\n", s);
 }
-

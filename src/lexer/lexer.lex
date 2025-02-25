@@ -132,7 +132,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 ":"     {return ':';}
 ";"     {return ';';}
 ","     {return ',';}
-    
+"="     {return '=';}
+
     /* marker mode */
 
 "# "        {BEGIN(markermode);}
@@ -166,10 +167,9 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 <c_char>"'" {
     int string_length = (int) (string_buf_ptr - string_start);
-    fprintf(stderr, "\t%d\n\n", string_length);
     if(string_length > 1){
         fprintf(stderr,
-"\n%s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
+"\nlexer: %s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
         
         yylval.s_len = 1;
     } else yylval.s_len = string_length;
@@ -205,7 +205,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     if ( result > 0xff )
     {
         fprintf(stderr, \
-    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+    "lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
     *string_buf_ptr++ = result;
@@ -218,7 +218,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     if ( result > 0xff )
     {
         fprintf(stderr, \
-    "%s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+    "lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
     *string_buf_ptr++ = result;
@@ -258,7 +258,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 <c_char,string_lit>[\n]+   {
     fprintf(stderr, \
-"%s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
+"lexer: %s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
     exit(-1);
 }
 
@@ -309,7 +309,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 [ \t]+  {} 
 
 .           {fprintf(stderr, \
-"%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
+"lexer: %s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
 
 %%
