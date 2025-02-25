@@ -20,7 +20,9 @@
 #define IS_INVAL(tag) ((tag & INVAL_BIT) == INVAL_BIT)
 #define IS_FLOATING(tag) ((tag & FL_BIT) == FL_BIT)
 
-#define YYSTYPE struct yy_struct
+typedef struct ast_node_t ast_node;
+
+/* #define YYSTYPE struct yy_struct */
 
 struct yy_struct{
 union 
@@ -44,6 +46,8 @@ unsigned int tags;
     5   invalid
     6   floating
 */
+
+ast_node *n;
 };
 
 #endif

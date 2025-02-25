@@ -1,10 +1,12 @@
 %debug
 %define parse.error verbose
 %define api.header.include {<parser/grammar.tab.h>}
-%define api.value.type { struct yy_struct }
+%define api.value.type { struct yy_struct };
 
 %{
 #define YYDEBUG 1
+
+#include <string.h>
 
 #include <ast/ast.h>
 #include <lexer/lexer.lex.h>
@@ -82,14 +84,43 @@ ast_node *root;
 %token COMPLEX
 %token IMAGINARY
 
+%type primary_expression
+%type postfix_expression
+%type unary_expression
+%type unary_operator
+%type cast_expression
+%type multiplicative_expression
+%type additive_expression
+%type shift_expression
+%type relational_expression
+%type equality_expression
+%type and_expression
+%type xor_expression
+%type or_expression
+%type logand_expression
+%type logor_expression
+%type conditional_expression
+%type assignment_expression
+%type assignment_operator
+%type expression
+
 %start expression
 
 %%
 
 primary_expression:
-                  IDENT 
-                  | NUMBER
-                  | STRING
+                  IDENT {
+                    $$.n = create_node(IDENT);
+                    $$.n->ident.value=strdup($1.s);    /* leaky leaky */
+                    /* wheres the length lebowski? */
+                  }
+                  | NUMBER  {
+                    $$.n = create_node(NUMBER);
+                    /* what, no floating point? */
+                    $$.n->num.ival = $1.ulld;
+                    $$.n->num.tags = $1.tags;
+                  }
+                  | STRING 
                   | CHARLIT
                   | '(' expression ')'
                   ;
@@ -133,8 +164,14 @@ multiplicative_expression:
 
 additive_expression:
                    multiplicative_expression
-                   | additive_expression '+' multiplicative_expression
-                   | additive_expression '_' multiplicative_expression
+                   | additive_expression '+' multiplicative_expression  {
+                    $$.n = create_node(BINOP);
+                    $$.n->binop.token=(int)'+';
+                    
+                    $$.n->binop.left=$1.n;
+                    $$.n->binop.right=$3.n;
+                   }
+                   | additive_expression '-' multiplicative_expression
                    ;
 
 shift_expression:
@@ -191,11 +228,10 @@ assignment_expression:
                      conditional_expression
                      | unary_expression assignment_operator
                      assignment_expression   {
-                        root = create_node(BINOP);
-                        root->binop.token=$2.ulld;
+                        $$.n=$2.n;
                         
-                        root->binop.left=$1;
-                        root->binop.right=$3;
+                        $$.n->binop.left=$1.n;
+                        $$.n->binop.right=$3.n;
                      }  /* youre being dumb
                         EVERYTHING SHOUDL GET A NODE CREATED AT A TERMINAL NODE
                         THEN
@@ -204,7 +240,10 @@ assignment_expression:
                      ;
 
 assignment_operator:
-                   '=' 
+                   '=' {
+                    $$.n = create_node(BINOP);
+                    $$.n->binop.token=(int)'=';
+                   }
                    | TIMESEQ
                    | DIVEQ
                    | MODEQ
@@ -218,7 +257,9 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression ';'
+          assignment_expression ';' {
+            root = $$.n;
+          }
           ;
 
 

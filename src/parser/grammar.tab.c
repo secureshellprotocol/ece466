@@ -71,6 +71,8 @@
 
 #define YYDEBUG 1
 
+#include <string.h>
+
 #include <ast/ast.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
@@ -82,7 +84,7 @@ void yyerror(const char *s);
 // tree root
 ast_node *root;
 
-#line 86 "src/parser/grammar.tab.c"
+#line 88 "src/parser/grammar.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -607,15 +609,15 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,    90,    90,    91,    92,    93,    94,    98,    99,   100,
-     101,   102,   103,   108,   109,   110,   111,   115,   116,   117,
-     118,   119,   120,   125,   128,   129,   130,   131,   135,   136,
-     137,   141,   142,   143,   147,   148,   149,   150,   151,   155,
-     156,   157,   161,   162,   166,   167,   171,   172,   176,   177,
-     181,   182,   186,   187,   191,   192,   203,   204,   205,   206,
-     207,   208,   209,   210,   211,   212,   213,   217
+       0,   112,   112,   117,   123,   124,   125,   129,   130,   131,
+     132,   133,   134,   139,   140,   141,   142,   146,   147,   148,
+     149,   150,   151,   156,   159,   160,   161,   162,   166,   167,
+     174,   178,   179,   180,   184,   185,   186,   187,   188,   192,
+     193,   194,   198,   199,   203,   204,   208,   209,   213,   214,
+     218,   219,   223,   224,   228,   229,   243,   247,   248,   249,
+     250,   251,   252,   253,   254,   255,   256,   260
 };
 #endif
 
@@ -1519,20 +1521,69 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 55: /* assignment_expression: unary_expression assignment_operator assignment_expression  */
-#line 193 "src/parser/grammar.y"
-                                             {
-                        root = create_node(BINOP);
-                        root->binop.token=yyvsp[-1].ulld;
-                        
-                        root->binop.left=yyvsp[-2];
-                        root->binop.right=yyvsp[0];
-                     }
+  case 2: /* primary_expression: IDENT  */
+#line 112 "src/parser/grammar.y"
+                        {
+                    yyval.n = create_node(IDENT);
+                    yyval.n->ident.value=strdup(yyvsp[0].s);    /* leaky leaky */
+                    /* wheres the length lebowski? */
+                  }
 #line 1532 "src/parser/grammar.tab.c"
     break;
 
+  case 3: /* primary_expression: NUMBER  */
+#line 117 "src/parser/grammar.y"
+                            {
+                    yyval.n = create_node(NUMBER);
+                    /* what, no floating point? */
+                    yyval.n->num.ival = yyvsp[0].ulld;
+                    yyval.n->num.tags = yyvsp[0].tags;
+                  }
+#line 1543 "src/parser/grammar.tab.c"
+    break;
 
-#line 1536 "src/parser/grammar.tab.c"
+  case 29: /* additive_expression: additive_expression '+' multiplicative_expression  */
+#line 167 "src/parser/grammar.y"
+                                                                        {
+                    yyval.n = create_node(BINOP);
+                    yyval.n->binop.token=(int)'+';
+                    
+                    yyval.n->binop.left=yyvsp[-2].n;
+                    yyval.n->binop.right=yyvsp[0].n;
+                   }
+#line 1555 "src/parser/grammar.tab.c"
+    break;
+
+  case 55: /* assignment_expression: unary_expression assignment_operator assignment_expression  */
+#line 230 "src/parser/grammar.y"
+                                             {
+                        yyval.n=yyvsp[-1].n;
+                        
+                        yyval.n->binop.left=yyvsp[-2].n;
+                        yyval.n->binop.right=yyvsp[0].n;
+                     }
+#line 1566 "src/parser/grammar.tab.c"
+    break;
+
+  case 56: /* assignment_operator: '='  */
+#line 243 "src/parser/grammar.y"
+                       {
+                    yyval.n = create_node(BINOP);
+                    yyval.n->binop.token=(int)'=';
+                   }
+#line 1575 "src/parser/grammar.tab.c"
+    break;
+
+  case 67: /* expression: assignment_expression ';'  */
+#line 260 "src/parser/grammar.y"
+                                    {
+            root = yyval.n;
+          }
+#line 1583 "src/parser/grammar.tab.c"
+    break;
+
+
+#line 1587 "src/parser/grammar.tab.c"
 
       default: break;
     }
@@ -1756,7 +1807,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 221 "src/parser/grammar.y"
+#line 266 "src/parser/grammar.y"
 
 
 int main(void)

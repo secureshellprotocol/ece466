@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <ast/ast.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
 #include <parser/grammar.tab.h>
