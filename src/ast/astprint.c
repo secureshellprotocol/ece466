@@ -30,6 +30,19 @@ void astprint(ast_node *n)
             printf("float) %Lg\n", n->num.fval);
         else printf("int) %llu\n", n->num.ival);
         break;
+    case CHARLIT:
+        printf("CHARLIT ");
+        chardecode(n->char_array.value[0]);
+        printf("\n");
+        break;
+    case STRING:
+        printf("STRING ");
+        for(int i = 0; i < n->char_array.s_len; i++)
+        {
+            chardecode(n->char_array.value[i]);
+        }
+        printf("\n");
+        break;
     case UNAOP:
         {
             char *tok_id = get_token_id(n->binop.token);

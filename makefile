@@ -7,7 +7,8 @@ CFLAGS=-g -Wall -pedantic -Iinclude/
 all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/astprint.o
 	$(CC) $(CFLAGS) obj/*.o 
 
-objtrigger: |obj
+.PHONY: objtrigger
+objtrigger: | obj
 
 obj:
 	mkdir -p obj
@@ -42,12 +43,13 @@ lex_standalone_obj:	obj/grammar.o # builds w/ a debug header to inject a new mai
 	$(CC) $(CFLAGS) obj/lex.yy.o obj/lex_utils.o -o lexer-debug.out
 
 ast_print_test: obj/ast.o obj/astprint.o obj/lex_utils.o
-	$(CC) $(CFLAGS) -c test/ast/printtest.c -o ast_printtest.o 
+	$(CC) $(CFLAGS) -c test/ast/printtest.c -o obj/ast_printtest.o 
 	$(CC) $(CFLAGS) obj/ast.o obj/astprint.o obj/lex_utils.o obj/ast_printtest.o \
 		-o ast_print_test.out
 
-.PHONY: objtrigger
 
+
+.PHONY: clean
 clean:
 	rm -v -r obj/ 
 	rm -v *.out .grammar-debug.output

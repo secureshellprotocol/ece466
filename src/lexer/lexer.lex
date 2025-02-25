@@ -157,7 +157,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
     /* charlits */
-    /* todo:*/
+    /* todo: */
 
 "'"  {
     string_buf_ptr = string_buf;
@@ -380,7 +380,6 @@ int main(int argc, char* argv[])
                 {
                     chardecode(yylval.s[i]);
                 }
-                
                 break;
             case IDENT:
                 printf("%s", 

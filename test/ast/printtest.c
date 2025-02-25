@@ -23,7 +23,7 @@ int main()
     root->binop.right->binop.right = create_node(IDENT);
     root->binop.right->binop.right->ident.value = strdup("abc");
     
-    print_from_node(root);        
+    astprint(root);        
     
     return 0;
 }
