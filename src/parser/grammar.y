@@ -16,6 +16,8 @@
 int yylex();
 void yyerror(const char *s);
 
+char p;
+
 // tree root
 ast_node *root;
 %}
@@ -111,7 +113,7 @@ ast_node *root;
 primary_expression:
                   IDENT {
                     $$.n = create_node(IDENT);
-                    $$.n->ident.value=strdup($1.s);    /* leaky leaky */
+                    $$.n->ident.value=$1.s;
                     /* wheres the length lebowski? */
                   }
                   | NUMBER  {
@@ -122,7 +124,9 @@ primary_expression:
                   }
                   | STRING 
                   | CHARLIT
-                  | '(' expression ')'
+                  | '(' expression ')'  {
+                    printf("HI\n");
+                  }
                   ;
 
 postfix_expression:
@@ -165,13 +169,18 @@ multiplicative_expression:
 additive_expression:
                    multiplicative_expression
                    | additive_expression '+' multiplicative_expression  {
+                    p = '+';
+                    hi:
                     $$.n = create_node(BINOP);
-                    $$.n->binop.token=(int)'+';
+                    $$.n->binop.token=(int)p;
                     
                     $$.n->binop.left=$1.n;
                     $$.n->binop.right=$3.n;
                    }
-                   | additive_expression '-' multiplicative_expression
+                   | additive_expression '-' multiplicative_expression  {
+                    p = '-';
+                    goto hi;
+                   }
                    ;
 
 shift_expression:
@@ -232,11 +241,7 @@ assignment_expression:
                         
                         $$.n->binop.left=$1.n;
                         $$.n->binop.right=$3.n;
-                     }  /* youre being dumb
-                        EVERYTHING SHOUDL GET A NODE CREATED AT A TERMINAL NODE
-                        THEN
-                        EVERYTHING SHOULD JUST BE ASSIGNMENTS FROM HEREIN.
-                        THAT IS WAY SIMPLER */
+                     }
                      ;
 
 assignment_operator:
@@ -268,10 +273,11 @@ expression:
 int main(void)
 {
     yyparse();
-    if(root!=NULL) print_from_node(root);
+    if(root!=NULL) astprint(root);
 }
 
 void yyerror(const char *s)
 {
-    fprintf(stderr, "\aparser: %s\n", s);
+    fprintf(stderr, "\aYou have disturbed me almost to the point of \
+insanity...There. I am insane now.\nparser: %s\n", s);
 }

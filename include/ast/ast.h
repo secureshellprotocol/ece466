@@ -4,6 +4,8 @@
 #include <lexer/lexer.lex.h>
 #include <parser/op.h>
 
+/* NODE TYPES */
+
 typedef struct ast_node_t ast_node;
 
 // For unary operations -- an expression is what's being acted upon by the 
@@ -44,9 +46,6 @@ typedef struct ast_node_ident_t {
     char *value;
 } nodetype_ident;
 
-
-/* ast node */
-
 typedef struct ast_node_t {
     int op_type;
     union {
@@ -58,8 +57,10 @@ typedef struct ast_node_t {
     };
 } ast_node;
 
+/* FUNCTIONS */
 
 ast_node *create_node(int ot);
-void print_from_node(ast_node *n);
+void free_node(ast_node *n);
+void astprint(ast_node *n);
 
 #endif
