@@ -12,11 +12,12 @@ grammar.o: src/parser/grammar.y
 		--header=include/parser/grammar.tab.h \
 		-v --report-file=.grammar-debug.output \
 		--output=src/parser/grammar.tab.c \
+		--token-table \
 		src/parser/grammar.y
 	$(CC) $(CFLAGS) -c src/parser/grammar.tab.c -o grammar.o
 	
-ast.o: src/parser/ast.c
-	$(CC) $(CFLAGS) -c src/parser/ast.c -o ast.o
+ast.o: src/ast/ast.c
+	$(CC) $(CFLAGS) -c src/ast/ast.c -o ast.o
 
 lex.yy.o: src/lexer/lexer.lex
 	$(LEX) -o src/lexer/lex.yy.c src/lexer/lexer.lex
@@ -33,8 +34,8 @@ lex_standalone_obj:	grammar.o # builds w/ a debug header to inject a new main
 	$(CC) $(CFLAGS) lex.yy.o lex_utils.o -o lexer-debug.out
 
 ast_print_test: ast.o lex_utils.o
-	$(CC) $(CFLAGS) -c test/parser/printtest.c -o ast_printtest.o 
-	$(CC) $(CFLAGS) ast.o lex_utils.o ast_printtest.o -o parser_print_test.out
+	$(CC) $(CFLAGS) -c test/ast/printtest.c -o ast_printtest.o 
+	$(CC) $(CFLAGS) ast.o lex_utils.o ast_printtest.o -o ast_print_test.out
 
 clean:
-	rm *.o *.out .grammar-debug.output
+	rm -v *.o *.out .grammar-debug.output
