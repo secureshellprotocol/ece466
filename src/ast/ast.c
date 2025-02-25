@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <ast/ast.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
 #include <parser/grammar.tab.h>
-#include <parser/ast.h>
 #include <parser/op.h>
 
 // macro for `print_from_node(ast_node *)`
