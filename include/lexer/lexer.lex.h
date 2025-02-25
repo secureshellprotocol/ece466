@@ -20,6 +20,7 @@
 #define IS_INVAL(tag) ((tag & INVAL_BIT) == INVAL_BIT)
 #define IS_FLOATING(tag) ((tag & FL_BIT) == FL_BIT)
 
+#define YYSTYPE struct yy_struct
 
 struct yy_struct{
 union 

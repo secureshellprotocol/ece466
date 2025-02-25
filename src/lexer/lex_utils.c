@@ -4,7 +4,9 @@
 #include <stddef.h>
 
 #include <lexer/lexer.lex.h>
-#include <lexer/tokens.h>
+#include <parser/grammar.tab.h>
+
+#define TOKEOF 0
 
 // prints a char if we can print it -- debug purposes.
 // otherwise, spit out a code

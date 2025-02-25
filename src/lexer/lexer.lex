@@ -8,11 +8,13 @@
 
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
-#include <lexer/tokens.h>
 #include <parser/grammar.tab.h>
 
-#define YYSTYPE  struct yy_struct
+#ifdef __LEXER_STANDALONE_H_JR
+YYSTYPE yylval;
+#else
 extern YYSTYPE yylval;
+#endif
 
 int line_num = 1;
 char yyin_name[4096] = "<stdin>";   
@@ -305,6 +307,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 [\n]+   {++line_num;}
 [ \t]+  {} 
+
 .           {fprintf(stderr, \
 "%s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
@@ -367,28 +370,28 @@ int main(int argc, char* argv[])
                 {
                     printf(" LONG DOUBLE ");
                 }
-                printf("\n");
                 break;
             case CHARLIT:
                 chardecode(yylval.s[0]);
-                printf("\n");
                 break;
             case STRING:
                 for(int i = 0; i < yylval.s_len; i++)
                 {
                     chardecode(yylval.s[i]);
                 }
-                printf("\n");
+                
                 break;
             case IDENT:
-                printf("%s\n", 
+                printf("%s", 
                     yylval.s);
                 break;
             default:
-                printf("%s\n", 
+                printf("%s", 
                     yytext);
                 break;  
+
         }
+        printf("\ttoken code: %d\n", t); 
     }
     return 0;
 }

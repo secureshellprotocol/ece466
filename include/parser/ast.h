@@ -2,7 +2,6 @@
 #define __AST_H_JR
 
 #include <lexer/lexer.lex.h>
-#include <lexer/tokens.h>
 #include <parser/op.h>
 
 typedef struct ast_node_t ast_node;
