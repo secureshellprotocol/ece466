@@ -1,6 +1,13 @@
 *.o
 *.out
+obj/*
 
+# flex-specific
 *lex.yy.c
+
+# bison-specific
+*grammar.tab.h
+*.grammar-debug.out
+*grammar.tab.c
 
 venv/*
