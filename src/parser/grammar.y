@@ -9,6 +9,7 @@
 
 #define YYDEBUG 1
 
+#include <stdio.h>
 #include <string.h>
 
 #include <ast/ast.h>
@@ -21,6 +22,8 @@ void yyerror(const char *s);
 
 // tree root
 ast_node *root;
+
+extern FILE *yyin;
 %}
 
 %token IDENT
@@ -107,7 +110,7 @@ ast_node *root;
 %type assignment_operator
 %type expression
 
-%start expression
+%start terminal
 
 %%
 
@@ -132,24 +135,53 @@ primary_expression:
 
 postfix_expression:
                   primary_expression
-                  | postfix_expression '[' assignment_expression ']'
-                  | postfix_expression '.' IDENT
-                  | postfix_expression INDSEL IDENT
-                  | postfix_expression PLUSPLUS
-                  | postfix_expression MINUSMINUS
+                  | postfix_expression '[' assignment_expression ']'    {
+                    ast_node *add = ast_create_binop((int)'+', $1.n, $3.n);
+                    $$.n = ast_create_unaop((int)'*', add);
+                  }
+                  | postfix_expression '(' ')'  {
+                    $$.n = ast_create_func($1.n, NULL);
+                  }
+                  | postfix_expression '(' argument_expression_list ')' {
+                    $$.n = ast_create_func($1.n, $3.n);
+                  }
+                  | postfix_expression '.' IDENT    {
+                    $$.n = ast_create_binop((int)'.', $1.n,
+                        ast_create_ident($3));
+                  }
+                  | postfix_expression INDSEL IDENT {
+                    ast_node *ptr_to_1 = ast_create_unaop((int)'*', $1.n);
+                    $$.n = ast_create_binop((int)'.', ptr_to_1, 
+                        ast_create_ident($3));
+                  }
+                  | postfix_expression PLUSPLUS {
+                    $$.n = ast_create_unaop(PLUSPLUS, $1.n);
+                  }
+                  | postfix_expression MINUSMINUS   {
+                    $$.n = ast_create_unaop(MINUSMINUS, $1.n);
+                  }
                   ;
 
+argument_expression_list:
+                        assignment_expression
+                        | argument_expression_list ',' assignment_expression
+                        ;
 
 unary_expression:
                 postfix_expression
                 | PLUSPLUS unary_expression {
-                    $$.n = ast_create_unaop(PLUSPLUS, $2.n);
+                    ast_node *one = ast_create_constant(1);
+                    $$.n = ast_create_binop((int)'+', $2.n, one);
                 }
                 | MINUSMINUS unary_expression   {
-                    $$.n = ast_create_unaop(MINUSMINUS, $2.n);
+                    ast_node *one = ast_create_constant(1);
+                    $$.n = ast_create_binop((int)'-', $2.n, one);
                 }
                 | unary_operator cast_expression    {
                     $$.n = ast_create_unaop($1.ulld, $2.n);
+                }
+                | SIZEOF unary_expression   { 
+                    $$.n = ast_create_unaop(SIZEOF, $2.n);
                 }
                 ;
 
@@ -297,16 +329,23 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression ';' {
-            root = $1.n;
-          }
+          assignment_expression
+          | expression ',' assignment_expression
           ;
 
+terminal:
+        expression ';'  {
+            root = $$.n;
+        }
+        ;
 
 %%
 
-int main(void)
+int main(int argc, char* argv[])
 {
+    yyin = fopen(argv[1], "r");
+//    yydebug=1;
+
     yyparse();
     if(root!=NULL) astprint(root);
 }

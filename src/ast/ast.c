@@ -39,6 +39,14 @@ ast_node *ast_create_num(struct yy_struct ys)
     return n;
 }
 
+ast_node *ast_create_constant(unsigned long long int ulld)
+{
+    ast_node *n = create_node(NUMBER);
+    n->num.ival = ulld;
+    n->num.tags = U_BIT;
+    return n;
+}
+
 ast_node *ast_create_string(struct yy_struct ys)
 {
     ast_node *n = create_node(STRING);
@@ -87,6 +95,16 @@ ast_node *ast_create_ternop(
     return n;
 }
 
+ast_node *ast_create_func(
+        ast_node *label, ast_node *arg_list)
+{
+    ast_node *n = create_node(FUNCTION);
+    
+    n->func.label = label;
+    n->func.args = arg_list;
+    return n;
+}
+
 // walks up node tree and deletes each node
 // NO PROTECTION -- ADD A REFERENCE COUNT QUESTION MARK????
 void free_node(ast_node *n)
@@ -95,22 +113,20 @@ void free_node(ast_node *n)
 
     switch(n->op_type)
     {
-    case IDENT:
-        goto freedom;
-    case NUMBER:
-        goto freedom;
     case UNAOP:
         free_node(n->unaop.expression);
-        goto freedom;
+        break;
     case BINOP:
         free_node(n->binop.left);
         free_node(n->binop.right);
-        goto freedom;
+        break;
     case TERNOP:
         free_node(n->ternop.left);
         free_node(n->ternop.middle);
         free_node(n->ternop.right);
-        goto freedom;
+        break;
+    default:
+        break;
     }
 
 freedom:

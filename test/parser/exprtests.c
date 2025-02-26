@@ -2,10 +2,10 @@
 /* to test for assignment 2.  These declarations are here to create a */
 /* syntactically valid pile of C code should you care to test this */
 /* with gcc or clang */
-f()
+/*f()
 {
 int a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,*p,s;
-struct tag {int m;} *x,q;
+struct tag {int m;} *x,q;*/
 
 a=b,c+=-10/d;
 "X"!="Y"?--e:f++;

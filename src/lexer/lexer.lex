@@ -156,9 +156,6 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     BEGIN(INITIAL);
 }
 
-    /* charlits */
-    /* todo: */
-
 "'"  {
     string_buf_ptr = string_buf;
     

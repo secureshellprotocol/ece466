@@ -3,6 +3,7 @@
 enum ops {
     UNAOP=400,
     BINOP,
-    TERNOP
+    TERNOP,
+    FUNCTION
 };
 #endif

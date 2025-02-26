@@ -74,8 +74,14 @@ void astprint(ast_node *n)
 
         if(n->ternop.right != NULL)
             astprint(n->ternop.right);
-        
-        break;           
+        break;
+    case FUNCTION:
+        printf("FUNCTION %s ", n->func.label->ident.value);
+        if(n->func.args != NULL)
+        {
+            printf("WITH ARGS \n");
+            astprint(n->func.args);
+        }
     }
 
     depth--;

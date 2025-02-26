@@ -19,19 +19,24 @@ struct ast_node_unaop_t {
 // For binary and ternary operations, the semantics of each operation is
 //  defined by what is to the left, right, and possibly center.
 // eg: 2 + x, left would reference `2`, right references `x`.
-typedef struct ast_node_binop_t {
+struct ast_node_binop_t {
     unsigned int token;
 
     ast_node *left;
     ast_node *right;
-} nodetype_binop;
+};
 
-typedef struct ast_node_ternop_t {
+struct ast_node_ternop_t {
     // there is only one type of ternary operator
     ast_node *left;
     ast_node *middle;
     ast_node *right;
-} nodetype_ternop;
+};
+
+struct ast_node_func_t {
+    ast_node *label;
+    ast_node *args;
+};
 
 // Terminal nodes
 struct ast_node_num_t {
@@ -61,6 +66,7 @@ typedef struct ast_node_t {
         struct ast_node_unaop_t unaop;
         struct ast_node_binop_t binop;
         struct ast_node_ternop_t ternop;
+        struct ast_node_func_t func;
     };
 } ast_node;
 
@@ -73,6 +79,8 @@ ast_node *ast_create_ident(struct yy_struct);
 ast_node *ast_create_num(struct yy_struct);
 ast_node *ast_create_string(struct yy_struct);
 ast_node *ast_create_charlit(struct yy_struct);
+ast_node *ast_create_constant(
+        unsigned long long int ulld);
 
 ast_node *ast_create_unaop(int token,
         ast_node *e);
@@ -80,6 +88,8 @@ ast_node *ast_create_binop(int token,
         ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(
         ast_node *l, ast_node *m, ast_node *r);
+ast_node *ast_create_func(
+        ast_node *label, ast_node *arg_list);
 
 void astprint(ast_node *n);
 #endif
