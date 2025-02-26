@@ -90,6 +90,8 @@ ast_node *ast_create_ternop(
         ast_node *l, ast_node *m, ast_node *r);
 ast_node *ast_create_func(
         ast_node *label, ast_node *arg_list);
+ast_node *ast_create_list(
+        ast_node *expr);
 
 void astprint(ast_node *n);
 #endif

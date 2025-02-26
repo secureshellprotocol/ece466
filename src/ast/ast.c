@@ -105,6 +105,16 @@ ast_node *ast_create_func(
     return n;
 }
 
+ast_node *ast_create_list(ast_node *expr)
+{
+    ast_node *n = create_node(LIST);
+
+    n->binop.left = NULL;
+    n->binop.right = expr;
+    return n;
+}
+
+
 // walks up node tree and deletes each node
 // NO PROTECTION -- ADD A REFERENCE COUNT QUESTION MARK????
 void free_node(ast_node *n)

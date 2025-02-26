@@ -164,7 +164,9 @@ postfix_expression:
 
 argument_expression_list:
                         assignment_expression
-                        | argument_expression_list ',' assignment_expression
+                        | argument_expression_list ',' assignment_expression    {
+                            $$.n = ast_create_list_item()
+                        }
                         ;
 
 unary_expression:
@@ -329,7 +331,9 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression
+          assignment_expression {
+            $$.n = ast_
+          }
           | expression ',' assignment_expression
           ;
 
