@@ -4,6 +4,8 @@
 #include <lexer/lexer.lex.h>
 #include <parser/op.h>
 
+#define NUM_PROTOTYPES 10
+
 /* NODE TYPES */
 
 typedef struct ast_node_t ast_node;
@@ -38,6 +40,12 @@ struct ast_node_func_t {
     ast_node *args;
 };
 
+struct ast_list_t   {
+    ast_node *value;
+    ast_node *prev;
+    ast_node *next;
+};
+
 // Terminal nodes
 struct ast_node_num_t {
     union {
@@ -57,16 +65,18 @@ struct ast_node_char_t {
 };
 
 typedef struct ast_node_t {
-    int op_type;
+    int op_type;    // refactor to 'type' later
     union {
         struct ast_node_ident_t ident;
-        struct ast_node_num_t num;
+        struct ast_node_num_t num;  // refactor to number in future
         struct ast_node_char_t char_array;
 
         struct ast_node_unaop_t unaop;
         struct ast_node_binop_t binop;
         struct ast_node_ternop_t ternop;
         struct ast_node_func_t func;
+    
+        struct ast_list_t list;
     };
 } ast_node;
 
@@ -82,6 +92,8 @@ ast_node *ast_create_charlit(struct yy_struct);
 ast_node *ast_create_constant(
         unsigned long long int ulld);
 
+// ast.c
+
 ast_node *ast_create_unaop(int token,
         ast_node *e);
 ast_node *ast_create_binop(int token, 
@@ -93,5 +105,11 @@ ast_node *ast_create_func(
 ast_node *ast_create_list(
         ast_node *expr);
 
+// ast_list.c
+
+ast_node *ast_list_start(ast_node *start);
+ast_node *ast_list_insert(ast_node *list_node, ast_node *value);
+
+// astprint.c
 void astprint(ast_node *n);
 #endif

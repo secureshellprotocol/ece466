@@ -4,7 +4,7 @@ YACC=bison
 YFLAGS=-t --language=C
 CFLAGS=-g -Wall -pedantic -Iinclude/
 
-all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/astprint.o
+all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/ast_list.o obj/astprint.o
 	$(CC) $(CFLAGS) obj/*.o 
 
 .PHONY: objtrigger
@@ -24,6 +24,9 @@ obj/grammar.o: src/parser/grammar.y
 	
 obj/ast.o: src/ast/ast.c
 	$(CC) $(CFLAGS) -c src/ast/ast.c -o obj/ast.o
+
+obj/ast_list.o: src/ast/ast_list.c
+	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o
 
 obj/astprint.o: src/ast/astprint.c
 	$(CC) $(CFLAGS) -c src/ast/astprint.c -o obj/astprint.o
@@ -47,9 +50,10 @@ ast_print_test: obj/ast.o obj/astprint.o obj/lex_utils.o
 	$(CC) $(CFLAGS) obj/ast.o obj/astprint.o obj/lex_utils.o obj/ast_printtest.o \
 		-o ast_print_test.out
 
-
+parser_exprtest: all 
+	./a.out < test/parser/exprtests_pp.c > exprtests.output
 
 .PHONY: clean
 clean:
 	rm -v -r obj/ 
-	rm -v *.out .grammar-debug.output
+	rm -v *.out *.output

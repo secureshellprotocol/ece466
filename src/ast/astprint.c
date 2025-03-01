@@ -82,6 +82,17 @@ void astprint(ast_node *n)
             printf("WITH ARGS \n");
             astprint(n->func.args);
         }
+        break;
+    case LIST:
+        printf("LIST ITEM");
+        astprint(n->list.value);
+        if(n->list.next != NULL)
+        {
+            depth--;
+            astprint(n->list.next);
+            depth++;
+        }
+        break;
     }
 
     depth--;

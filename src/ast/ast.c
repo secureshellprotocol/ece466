@@ -10,7 +10,6 @@
 ast_node *create_node(int ot)
 {
     ast_node *n = (ast_node *) calloc(1, sizeof(ast_node));
-    
     n->op_type = ot;
     
     return n;
@@ -105,18 +104,9 @@ ast_node *ast_create_func(
     return n;
 }
 
-ast_node *ast_create_list(ast_node *expr)
-{
-    ast_node *n = create_node(LIST);
-
-    n->binop.left = NULL;
-    n->binop.right = expr;
-    return n;
-}
-
-
 // walks up node tree and deletes each node
 // NO PROTECTION -- ADD A REFERENCE COUNT QUESTION MARK????
+// Hak -- i know this isnt required, but i wanted to try anyways
 void free_node(ast_node *n)
 {
     if(n == NULL) { return; }

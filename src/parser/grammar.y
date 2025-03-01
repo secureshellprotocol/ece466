@@ -1,4 +1,3 @@
-%debug
 %define parse.error verbose
 %define api.header.include {<parser/grammar.tab.h>}
 %define api.value.type { struct yy_struct };
@@ -110,7 +109,7 @@ extern FILE *yyin;
 %type assignment_operator
 %type expression
 
-%start terminal
+%start start
 
 %%
 
@@ -128,7 +127,7 @@ primary_expression:
                   | STRING  {
                     $$.n = ast_create_string($1);
                   }
-                  | '(' assignment_expression ')'  {
+                  | '(' expression ')'  {
                     $$ = $2;
                   }
                   ;
@@ -163,9 +162,11 @@ postfix_expression:
                   ;
 
 argument_expression_list:
-                        assignment_expression
+                        assignment_expression   {
+                            $$.n = ast_list_start($1.n);
+                        }
                         | argument_expression_list ',' assignment_expression    {
-                            $$.n = ast_create_list_item()
+                            $$.n = ast_list_insert($1.n, $3.n);
                         }
                         ;
 
@@ -303,15 +304,15 @@ conditional_expression:
                       ;
 
 ternary_expression:
-                      logor_expression '?' expression ':' conditional_expression {
-                        $$.n = ast_create_ternop($1.n, $3.n, $5.n);
-                      }
-                      ;
+                  logor_expression '?' expression ':' conditional_expression {
+                    $$.n = ast_create_ternop($1.n, $3.n, $5.n);
+                  }
+                  ;
 
 assignment_expression: 
                      conditional_expression
                      | unary_expression assignment_operator
-                     assignment_expression   {
+                        assignment_expression   {
                         $$.n = ast_create_binop($2.ulld, $1.n, $3.n);
                      }
                      ;
@@ -331,31 +332,43 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression {
-            $$.n = ast_
+          assignment_expression 
+          | expression ',' assignment_expression {
+            $$.n = ast_create_binop((int)',', $1.n, $3.n);
           }
-          | expression ',' assignment_expression
           ;
-
+          
 terminal:
         expression ';'  {
             root = $$.n;
         }
         ;
 
+start:
+     <<EOF>>    { YYABORT; }
+     | terminal   {
+        if(root!=NULL) astprint(root);
+        YYACCEPT;
+     }
+     ;
 %%
 
 int main(int argc, char* argv[])
 {
     yyin = fopen(argv[1], "r");
 //    yydebug=1;
-
-    yyparse();
-    if(root!=NULL) astprint(root);
+    
+    while(yyparse() != 1);
 }
 
 void yyerror(const char *s)
 {
-    fprintf(stderr, "\aYou have disturbed me almost to the point of \
+    fprintf(stderr, "\aparser: You have disturbed me almost to the point of \
 insanity...There. I am insane now.\nparser: %s\n", s);
 }
+
+//int yywrap()
+//{
+//    // one file only
+//    return 1;
+//}
