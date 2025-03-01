@@ -47,39 +47,69 @@ void chardecode(char input)
     }
 }
 
-unsigned int tagparse(char* yytext)
+unsigned int tagparse(char* yytext, unsigned int yytags)
 {
     char *numberlit = yytext + strlen(yytext) - 1;
-    unsigned int tags = 0;
+    unsigned int tags = yytags;
 
     while(numberlit >= yytext)
     {
         switch(*numberlit)
         {
-            case 'U':
-            u_suffix:
+            case 'U': case 'u':
+                if(IS_UNSIGNED(tags))
+                {
+                    goto error;
+                }
+
                 tags |= U_BIT;
                 break;
-            case 'u':
-                goto u_suffix;
-            case 'L':
-            l_suffix:
-                if((tags &= L_BIT) == L_BIT)
+            case 'L': case 'l':
+                switch(IS_FLOATING(tags))
                 {
-                    tags |= LL_BIT;
-                    tags &= ~(L_BIT);
+                case 0:    // integer
+                    if(IS_LLONG(tags))
+                    {
+                        goto error;
+                    }
+                    if((tags & L_BIT) == L_BIT)
+                    {
+                        tags |= LL_BIT;
+                        tags &= ~(L_BIT);
+                    }
+                    else
+                    {
+                        tags |= L_BIT;
+                    }
+                    break;
+                default:    // real
+                    if(IS_LONG(tags) || !IS_DOUBLE(tags))
+                    {   // we cannot have a single-precision long float
+                        goto error;
+                    }
+                    
+                    tags |= L_BIT;
                     break;
                 }
-                tags |= L_BIT;
                 break;
-            case 'l':
-                goto l_suffix;
+            case 'F': case 'f':
+                if( !IS_DOUBLE(tags) )
+                {
+                    goto error;
+                }
+                
+                tags &= ~(D_BIT);
+                break;
             default:
                 return tags;
         }
         numberlit--;
     }
 
+    return tags;
+
+error:
+    tags |= INVAL_BIT;
     return tags;
 }
 

@@ -41,6 +41,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 %x  string_lit
 
+%x  integer
 %x  real
 
 %x  hex
@@ -277,23 +278,44 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
     /* integers */
 
+[0-9]+\.+[0-9]+ {
+    yylval.ldf = strtold(yytext, NULL);
+    yylval.tags = (F_BIT | D_BIT);    // default double precision on constants.
+    BEGIN(real);
+}
+
+<real>[f]+|[F]+ {
+    yylval.tags = tagparse(yytext, yylval.tags);
+    printf("%d", yylval.tags);
+}
+
+<real>[l]+|[L]+ {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<real>[. \n] {
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+
 [0]+[0-7]* { 
     yylval.ulld = strtoull(yytext, NULL, 8);
-    yylval.tags = tagparse(yytext);
+    yylval.tags = tagparse(yytext, 0);
     return NUMBER;
 }
 
 [1-9]+[0-9]*[Uu]{0,1}[Ll]{0,2} {
     yylval.ulld = strtoull(yytext, NULL, 10);
-    yylval.tags = tagparse(yytext);
+    yylval.tags = tagparse(yytext, 0);
     return NUMBER;
 }
+
 
 0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {  /*  reverse doesnt work
         use a start condition to check if its either U or u, and iether L or lg
             */
     yylval.ulld = strtoull(yytext, NULL, 16);
-    yylval.tags = tagparse(yytext);
+    yylval.tags = tagparse(yytext, 0);
     return NUMBER;
 }
 
@@ -340,7 +362,7 @@ int main(int argc, char* argv[])
             case NUMBER:
                 if(IS_INVAL(yylval.tags))
                 {
-                    printf( "INVALID\n");
+                    printf( "INVALID");
                     break;
                 }
                 if(IS_FLOATING(yylval.tags))
@@ -363,10 +385,6 @@ int main(int argc, char* argv[])
                 if(IS_DOUBLE(yylval.tags))
                 {
                     printf(" DOUBLE ");
-                }
-                if(IS_DOUBLONG(yylval.tags))
-                {
-                    printf(" LONG DOUBLE ");
                 }
                 break;
             case CHARLIT:

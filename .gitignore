@@ -1,6 +1,7 @@
 *.o
 *.out
 obj/*
+*.output
 
 # flex-specific
 *lex.yy.c
