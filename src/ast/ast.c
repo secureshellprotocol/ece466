@@ -30,7 +30,7 @@ ast_node *ast_create_num(struct yy_struct ys)
     case 0: /* integer */
         n->num.ival = ys.ulld;
         break;
-    case 1: /* real */
+    default: /* real */
         n->num.fval = ys.ldf;
         break;
     }
