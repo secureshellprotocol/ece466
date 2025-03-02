@@ -345,10 +345,8 @@ terminal:
         ;
 
 start:
-     <<EOF>>    { YYABORT; }
-     | terminal   {
+     terminal   {
         if(root!=NULL) astprint(root);
-        YYACCEPT;
      }
      ;
 %%
@@ -358,7 +356,7 @@ int main(int argc, char* argv[])
     yyin = fopen(argv[1], "r");
 //    yydebug=1;
     
-    while(yyparse() != 1);
+    yyparse();
 }
 
 void yyerror(const char *s)
