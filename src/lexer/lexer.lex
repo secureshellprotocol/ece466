@@ -284,38 +284,38 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     BEGIN(real);
 }
 
-<real>[f]+|[F]+ {
-    yylval.tags = tagparse(yytext, yylval.tags);
-    printf("%d", yylval.tags);
-}
-
-<real>[l]+|[L]+ {
-    yylval.tags = tagparse(yytext, yylval.tags);
-}
-
-<real>[. \n] {
-    BEGIN(INITIAL);
-    return NUMBER;
+[1-9]+[0-9]* {
+    yylval.ulld = strtoull(yytext, NULL, 10);
+    yylval.tags = 0;
+    BEGIN(integer);
 }
 
 [0]+[0-7]* { 
     yylval.ulld = strtoull(yytext, NULL, 8);
-    yylval.tags = tagparse(yytext, 0);
-    return NUMBER;
+    yylval.tags = 0;
+    BEGIN(integer);
 }
 
-[1-9]+[0-9]*[Uu]{0,1}[Ll]{0,2} {
-    yylval.ulld = strtoull(yytext, NULL, 10);
-    yylval.tags = tagparse(yytext, 0);
-    return NUMBER;
-}
-
-
-0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {  /*  reverse doesnt work
-        use a start condition to check if its either U or u, and iether L or lg
-            */
+0[xX]{1}[0-9A-Fa-f]+    {  
     yylval.ulld = strtoull(yytext, NULL, 16);
     yylval.tags = tagparse(yytext, 0);
+    BEGIN(integer);
+}
+
+<real>[f]+|[F]+ {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<integer>[u]+|[U]+  {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<real,integer>[l]+|[L]+ {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<real,integer>[. \n] {
+    BEGIN(INITIAL);
     return NUMBER;
 }
 
