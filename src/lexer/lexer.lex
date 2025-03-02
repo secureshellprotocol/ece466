@@ -30,6 +30,9 @@ char *string_start;
     /* https://stackoverflow.com/questions/63785787/flex-regular-expression-for-strings-with-either-single-or-double-quotes */
 string_lit_match    ([^"\\\n]|\\(.|\n))*
 
+hex_real    0[xX]{1}(([0-9A-Fa-f]+\.+[0-9A-Fa-f]*)|([0-9A-Fa-f]*\.+[0-9A-Fa-f]+))+([pP]{0,1}[+-]{0,1}[0-9]+)*
+dec_real    ((([0-9]*\.+[0-9]+)|([0-9]+\.+[0-9]*))+([eE]{0,1}[+-]{0,1}[0-9]+)*)
+
 ident       [_A-Za-z][_A-Za-z0-9]*
 
     // start conditions
@@ -41,7 +44,9 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 %x  string_lit
 
-%x  real
+%x  integer
+%x  real_exponent
+%x  real_suffix
 
 %x  hex
 %x  oct
@@ -275,25 +280,58 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
 
-    /* integers */
+    /* reals and integers */
+
+{dec_real}|{hex_real} {
+    yylval.ldf = strtold(yytext, NULL);
+    yylval.tags = (F_BIT | D_BIT);    // default double precision on constants.
+    BEGIN(real_suffix);
+}
+
+[1-9]+[0-9]* {
+    yylval.ulld = strtoull(yytext, NULL, 10);
+    yylval.tags = 0;
+    BEGIN(integer);
+}
 
 [0]+[0-7]* { 
     yylval.ulld = strtoull(yytext, NULL, 8);
-    yylval.tags = tagparse(yytext);
-    return NUMBER;
+    yylval.tags = 0;
+    BEGIN(integer);
 }
 
-[1-9]+[0-9]*[Uu]{0,1}[Ll]{0,2} {
-    yylval.ulld = strtoull(yytext, NULL, 10);
-    yylval.tags = tagparse(yytext);
-    return NUMBER;
-}
-
-0[xX]{1}[0-9A-Fa-f]+[Uu]{0,1}[Ll]{0,2}   {  /*  reverse doesnt work
-        use a start condition to check if its either U or u, and iether L or lg
-            */
+0[xX]{1}[0-9A-Fa-f]+    {  
     yylval.ulld = strtoull(yytext, NULL, 16);
-    yylval.tags = tagparse(yytext);
+    yylval.tags = tagparse(yytext, 0);
+    BEGIN(integer);
+}
+
+<real_suffix>[f]{1}|[F]{1} {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<integer>[u]{1}|[U]{1}  {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+<real_suffix,integer>[l]{1}|[L]{1} {
+    yylval.tags = tagparse(yytext, yylval.tags);
+}
+
+
+<real_suffix>[^lLfF]{1} {
+/*   Note the 'sus' solution here -- intention! i matched one character which */
+/*     wasnt anything that I was looking for. So. push it back, and pay it    */
+/*     forward to the main lexer rules.                                       */
+/*     this appears to do what i want. Note I'm using the %array flex option, */ 
+/*     see section 8 of the Flex manual on unput()  */
+    unput(yytext[0]);
+    BEGIN(INITIAL);
+    return NUMBER;
+}
+<integer>[^uUlL]{1} {
+    unput(yytext[0]);
+    BEGIN(INITIAL);
     return NUMBER;
 }
 
@@ -304,7 +342,7 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 }
 
 [\n]+   {++line_num;}
-[ \t]+  {} 
+[ \t]+  { /*whitespace consumption */ } 
 
 .           {fprintf(stderr, \
 "lexer: %s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
@@ -340,7 +378,7 @@ int main(int argc, char* argv[])
             case NUMBER:
                 if(IS_INVAL(yylval.tags))
                 {
-                    printf( "INVALID\n");
+                    printf( "INVALID");
                     break;
                 }
                 if(IS_FLOATING(yylval.tags))
@@ -363,10 +401,6 @@ int main(int argc, char* argv[])
                 if(IS_DOUBLE(yylval.tags))
                 {
                     printf(" DOUBLE ");
-                }
-                if(IS_DOUBLONG(yylval.tags))
-                {
-                    printf(" LONG DOUBLE ");
                 }
                 break;
             case CHARLIT:

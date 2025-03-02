@@ -39,7 +39,7 @@ obj/lex_utils.o: src/lexer/lex_utils.c
 	$(CC) $(CFLAGS) -c src/lexer/lex_utils.c -o obj/lex_utils.o
 
 # === test programs ===
-lex_standalone_obj:	obj/grammar.o # builds w/ a debug header to inject a new main
+lex_standalone_obj:	objtrigger obj/grammar.o # builds w/ a debug header to inject a new main
 	$(LEX) -o src/lexer/lex.yy.c src/lexer/lexer.lex
 	$(CC) $(CFLAGS) -c src/lexer/lex.yy.c -include test/lexer/debug.h -o obj/lex.yy.o
 	$(CC) $(CFLAGS) -c src/lexer/lex_utils.c -o obj/lex_utils.o
