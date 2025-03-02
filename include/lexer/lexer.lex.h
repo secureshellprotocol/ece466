@@ -9,7 +9,7 @@
 #define LL_BIT 4
 #define D_BIT 8
 #define F_BIT 16
-#define INVAL_BIT 32
+#define INVAL_BIT 128
 
 #define IS_UNSIGNED(tag) ((tag & U_BIT))
 #define IS_LONG(tag) ((tag & L_BIT))
@@ -37,15 +37,6 @@ struct yy_struct{
 
     int s_len;   // Only used for strings
     unsigned int tags;
-    /*  bit meaning (1 is true)
-        0   unsigned
-        1   long
-        2   long long   (XOR bit 1)
-        3   double
-        4   long double
-        5   invalid
-        6   floating
-    */
 
     ast_node *n;
 };

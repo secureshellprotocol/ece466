@@ -83,7 +83,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                     }
                     break;
                 default:    // real
-                    if(IS_LONG(tags) || !IS_DOUBLE(tags))
+                    if(!IS_DOUBLE(tags) || IS_LONG(tags))
                     {   // we cannot have a single-precision long float
                         goto error;
                     }
@@ -93,7 +93,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                 }
                 break;
             case 'F': case 'f':
-                if( !IS_DOUBLE(tags) )
+                if( !IS_DOUBLE(tags) || IS_LONG(tags))
                 {
                     goto error;
                 }
