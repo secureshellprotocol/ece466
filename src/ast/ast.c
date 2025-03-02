@@ -129,7 +129,6 @@ void free_node(ast_node *n)
         break;
     }
 
-freedom:
     free(n);
     return;
 }

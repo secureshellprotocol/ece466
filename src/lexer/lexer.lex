@@ -172,7 +172,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     int string_length = (int) (string_buf_ptr - string_start);
     if(string_length > 1){
         fprintf(stderr,
-"\nlexer: %s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
+"\nlexer:When the going gets tough, everyone leaves.\n\
+lexer: %s: line %d: %s cannot fit in a char! concatenated to %c\n", yyin_name, line_num, string_buf, string_buf[0]);
         
         yylval.s_len = 1;
     } else yylval.s_len = string_length;
@@ -208,7 +209,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     if ( result > 0xff )
     {
         fprintf(stderr, \
-    "lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+    "lexer:When the going gets tough, everyone leaves. \n\
+    lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
     *string_buf_ptr++ = result;
@@ -221,7 +223,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
     if ( result > 0xff )
     {
         fprintf(stderr, \
-    "lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
+    "lexer:When the going gets tough, everyone leaves.\n\
+    lexer: %s: Line %d: %s is too large\n", yyin_name, line_num, yytext);
         exit(-1);   
     }
     *string_buf_ptr++ = result;
@@ -261,7 +264,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 
 <c_char,string_lit>[\n]+   {
     fprintf(stderr, \
-"lexer: %s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
+"lexer: When the going gets tough, everyone leaves.\n\
+lexer: %s: Unterminated string constant at line %d: %s\n", yyin_name, line_num, yytext);
     exit(-1);
 }
 
@@ -345,7 +349,8 @@ ident       [_A-Za-z][_A-Za-z0-9]*
 [ \t]+  { /*whitespace consumption */ } 
 
 .           {fprintf(stderr, \
-"lexer: %s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
+"lexer: When the going gets tough, everyone leaves.\n\
+lexer: %s: Unrecognized character at line %d: %s\n", yyin_name, line_num, yytext);
 }
 
 %%

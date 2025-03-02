@@ -114,8 +114,8 @@ extern FILE *yyin;
 %%
 
 primary_expression:
-                  IDENT {   /* lexer is performing a strcpy, 
-                                so its uniquely storing the value */
+                  IDENT {   /* lexer is performing a strdup,
+                        therefore value is in stable storage. */
                     $$.n = ast_create_ident($1);
                   }
                   | NUMBER  {
@@ -133,10 +133,10 @@ primary_expression:
                   ;
 
 postfix_expression:
-                  primary_expression
+                  primary_expression    { $$ = $1; }
                   | postfix_expression '[' assignment_expression ']'    {
-                    ast_node *add = ast_create_binop((int)'+', $1.n, $3.n);
-                    $$.n = ast_create_unaop((int)'*', add);
+                    ast_node *add = ast_create_binop('+', $1.n, $3.n);
+                    $$.n = ast_create_unaop('*', add);
                   }
                   | postfix_expression '(' ')'  {
                     $$.n = ast_create_func($1.n, NULL);
@@ -145,12 +145,12 @@ postfix_expression:
                     $$.n = ast_create_func($1.n, $3.n);
                   }
                   | postfix_expression '.' IDENT    {
-                    $$.n = ast_create_binop((int)'.', $1.n,
+                    $$.n = ast_create_binop('.', $1.n,
                         ast_create_ident($3));
                   }
                   | postfix_expression INDSEL IDENT {
-                    ast_node *ptr_to_1 = ast_create_unaop((int)'*', $1.n);
-                    $$.n = ast_create_binop((int)'.', ptr_to_1, 
+                    ast_node *ptr_to_1 = ast_create_unaop('*', $1.n);
+                    $$.n = ast_create_binop('.', ptr_to_1, 
                         ast_create_ident($3));
                   }
                   | postfix_expression PLUSPLUS {
@@ -171,14 +171,14 @@ argument_expression_list:
                         ;
 
 unary_expression:
-                postfix_expression
+                postfix_expression  { $$ = $1; }
                 | PLUSPLUS unary_expression {
                     ast_node *one = ast_create_constant(1);
-                    $$.n = ast_create_binop((int)'+', $2.n, one);
+                    $$.n = ast_create_binop('+', $2.n, one);
                 }
                 | MINUSMINUS unary_expression   {
                     ast_node *one = ast_create_constant(1);
-                    $$.n = ast_create_binop((int)'-', $2.n, one);
+                    $$.n = ast_create_binop('-', $2.n, one);
                 }
                 | unary_operator cast_expression    {
                     $$.n = ast_create_unaop($1.ulld, $2.n);
@@ -199,34 +199,34 @@ unary_operator:
 
 /* temporary kludge __ we dont have typing *yet* */
 cast_expression:
-               unary_expression
+               unary_expression { $$ = $1; }
 
 multiplicative_expression:
-                         cast_expression
+                         cast_expression    { $$ = $1; }
                          | multiplicative_expression '*' cast_expression    {
-                            $$.n = ast_create_binop((int)'*', $1.n, $3.n);
+                            $$.n = ast_create_binop('*', $1.n, $3.n);
                          }
                          | multiplicative_expression '/' cast_expression    {
-                            $$.n = ast_create_binop((int)'/', $1.n, $3.n);
+                            $$.n = ast_create_binop('/', $1.n, $3.n);
                          }
  
                          | multiplicative_expression '%' cast_expression    {
-                            $$.n = ast_create_binop((int)'%', $1.n, $3.n);
+                            $$.n = ast_create_binop('%', $1.n, $3.n);
                          }
                          ;
 
 additive_expression:
-                   multiplicative_expression
+                   multiplicative_expression    { $$ = $1; }
                    | additive_expression '+' multiplicative_expression  {
-                    $$.n = ast_create_binop((int)'+', $1.n, $3.n);
+                    $$.n = ast_create_binop('+', $1.n, $3.n);
                    }
                    | additive_expression '-' multiplicative_expression  {
-                    $$.n = ast_create_binop((int)'-', $1.n, $3.n);
+                    $$.n = ast_create_binop('-', $1.n, $3.n);
                    }
                    ;
 
 shift_expression:
-                additive_expression
+                additive_expression { $$ = $1; }
                 | shift_expression SHL additive_expression  {
                     $$.n = ast_create_binop(SHL, $1.n, $3.n);
                 }
@@ -236,12 +236,12 @@ shift_expression:
                 ;
 
 relational_expression:
-                     shift_expression
+                     shift_expression   { $$ = $1; }
                      | relational_expression '<' shift_expression   {
-                        $$.n = ast_create_binop((int)'<', $1.n, $3.n);
+                        $$.n = ast_create_binop('<', $1.n, $3.n);
                      }
                      | relational_expression '>' shift_expression   {
-                        $$.n = ast_create_binop((int)'>', $1.n, $3.n);
+                        $$.n = ast_create_binop('>', $1.n, $3.n);
                      }
  
                      | relational_expression LTEQ shift_expression   {
@@ -254,7 +254,7 @@ relational_expression:
                      ;
 
 equality_expression:
-                   relational_expression
+                   relational_expression    { $$ = $1; }
                    | equality_expression EQEQ relational_expression {
                     $$.n = ast_create_binop(EQEQ, $1.n, $3.n);
                    }
@@ -264,42 +264,42 @@ equality_expression:
                    ;
 
 and_expression:
-              equality_expression
+              equality_expression   { $$ = $1; }
               | and_expression '&' equality_expression  {
-                $$.n = ast_create_binop((int)'&', $1.n, $3.n);
+                $$.n = ast_create_binop('&', $1.n, $3.n);
               }
               ;
 
 xor_expression:
-              and_expression
+              and_expression   { $$ = $1; } 
               | xor_expression '^' and_expression   {
-                $$.n = ast_create_binop((int)'^', $1.n, $3.n);
+                $$.n = ast_create_binop('^', $1.n, $3.n);
               }
               ;
 
 or_expression:
-             xor_expression
+             xor_expression { $$ = $1; }
              | or_expression '|' xor_expression {
-                $$.n = ast_create_binop((int)'|', $1.n, $3.n);
+                $$.n = ast_create_binop('|', $1.n, $3.n);
              }
              ;
 
 logand_expression:
-                 or_expression
+                 or_expression  { $$ = $1; }
                  | logand_expression LOGAND or_expression   {
                     $$.n = ast_create_binop(LOGAND, $1.n, $3.n);
                  }
                  ;
 
 logor_expression:
-                logand_expression
+                logand_expression   { $$ = $1; }
                 | logor_expression LOGOR logand_expression  {
                     $$.n = ast_create_binop(LOGOR, $1.n, $3.n);
                 }
                 ;
 
 conditional_expression:
-                      logor_expression
+                      logor_expression  { $$ = $1; }
                       | ternary_expression
                       ;
 
@@ -310,7 +310,7 @@ ternary_expression:
                   ;
 
 assignment_expression: 
-                     conditional_expression
+                     conditional_expression { $$ = $1; }
                      | unary_expression assignment_operator
                         assignment_expression   {
                         $$.n = ast_create_binop($2.ulld, $1.n, $3.n);
@@ -332,9 +332,9 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression 
+          assignment_expression { $$ = $1; }
           | expression ',' assignment_expression {
-            $$.n = ast_create_binop((int)',', $1.n, $3.n);
+            $$.n = ast_create_binop(',', $1.n, $3.n);
           }
           ;
           
@@ -354,7 +354,7 @@ start:
 int main(int argc, char* argv[])
 {
     yyin = fopen(argv[1], "r");
-//    yydebug=1;
+    yydebug=1;
     
     yyparse();
 }

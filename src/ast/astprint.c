@@ -45,7 +45,7 @@ void astprint(ast_node *n)
         break;
     case UNAOP:
         {
-            char *tok_id = get_token_id(n->binop.token);
+            char *tok_id = get_token_id(n->unaop.token);
             printf("UNARY OP %s\n", tok_id); 
         }
         if(n->unaop.expression != NULL)
@@ -94,6 +94,9 @@ void astprint(ast_node *n)
             depth++;
         }
         break;
+    default:
+        fprintf(stderr, "astprint: If I cannot bend Heaven, I shall move Hell.\n\
+            astprint: unexpected node type %d\n", n->op_type);
     }
 
     depth--;
