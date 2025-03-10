@@ -345,8 +345,20 @@ terminal:
         ;
 
 start:
+<<<<<<< Updated upstream
      terminal   {
         if(root!=NULL) astprint(root);
+||||||| Stash base
+     <<EOF>>    { YYABORT; }
+     | terminal   {
+        if(root!=NULL) astprint(root);
+        YYACCEPT;
+=======
+/*     <<EOF>>    { YYABORT; }  */
+     terminal   {
+    //    if(root!=NULL) astprint(root);
+      //  YYACCEPT;
+>>>>>>> Stashed changes
      }
      ;
 %%
