@@ -345,40 +345,28 @@ terminal:
         ;
 
 start:
-<<<<<<< Updated upstream
-     terminal   {
+     terminal start {
         if(root!=NULL) astprint(root);
-||||||| Stash base
-     <<EOF>>    { YYABORT; }
+     }  
      | terminal   {
         if(root!=NULL) astprint(root);
-        YYACCEPT;
-=======
-/*     <<EOF>>    { YYABORT; }  */
-     terminal   {
-    //    if(root!=NULL) astprint(root);
-      //  YYACCEPT;
->>>>>>> Stashed changes
      }
      ;
 %%
 
 int main(int argc, char* argv[])
 {
-    yyin = fopen(argv[1], "r");
-    yydebug=1;
-    
+    if(argc>1)
+    {
+        yyin = fopen(argv[1], "r");
+    }
+    yydebug=0;
+
     yyparse();
 }
 
 void yyerror(const char *s)
 {
-    fprintf(stderr, "\aparser: You have disturbed me almost to the point of \
+    fprintf(stderr, "parser: You have disturbed me almost to the point of \
 insanity...There. I am insane now.\nparser: %s\n", s);
 }
-
-//int yywrap()
-//{
-//    // one file only
-//    return 1;
-//}
