@@ -6,6 +6,7 @@ enum ops {
     BINOP,
     TERNOP,
     FUNCTION,
-    LIST
+    LIST,
+    POINTER
 };
 #endif

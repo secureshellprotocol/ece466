@@ -344,6 +344,223 @@ terminal:
         }
         ;
 
+
+declaration:
+           declaration_specifiers ';'
+           ;
+
+declaration_specifiers:
+                      storage_class_specifier
+                      | storage_class_spec declaration_specifiers
+                      | type_specifier
+                      | type_specifier declaration_specifiers
+                      | type_qualifier
+                      | type_qualifier declaration_specifiers
+                      | function_specifier
+                      | function_specifier declaration_specifiers
+                      ;
+
+storage_class_specifier:
+                       TYPEDEF
+                       | EXTERN
+                       | STATIC
+                       | AUTO
+                       | REGISTER
+                       ;
+
+type_specifier:
+              VOID
+              | CHAR
+              | SHORT
+              | INT
+              | LONG
+              | FLOAT
+              | DOUBLE
+              | SIGNED
+              | UNSIGNED
+              | BOOL
+              | COMPLEX
+              | struct_or_union_specifier
+              | enum_specifier
+              ;
+
+    /*function_specifier:*/
+                      /*INLINE*/
+                      /*;*/
+
+type_qualifier:
+              CONST
+              | RESTRICT
+              | VOLATILE
+              ;
+
+struct_or_union_specifier:
+                         struct_or_union '{' struct_declaration_list '}'
+                         | struct_or_union IDENT '{' struct_declaration_list '}'
+                         | struct_or_union IDENT
+                         ;
+struct_or_union:
+               STRUCT
+               | UNION
+               ;
+
+struct_declaration_list:
+                       struct_declaration
+                       | struct_declaration_list struct_declaration
+                       ;
+
+struct_declaration:
+                  specifier_quantifier_list struct_declarator_list ';'
+                  ;
+
+specifier_quantifier_list:
+                         type_specifier
+                         | type_specifier specifier_quantifier_list
+                         | type_quantifier
+                         | type_quantifier type_quantifier_list
+                         ;
+
+struct_declarator_list:
+                      struct_declarator
+                      | struct_declarator_list ',' struct_declarator
+                      ;
+
+    /* not doing bitfields */
+struct_declarator:
+                 declarator
+                 ;
+
+enum_specifier:
+              ENUM '{' enumerator_list '}'
+              | ENUM IDENT '{' enumerator_list '}'
+              | ENUM '{' enumerator_list ',' '}'
+              | ENUM IDENT '{' enumerator_list ',' '}'
+              | ENUM IDENT
+              ;
+
+enumerator_list:
+               enumerator
+               | enumerator_list ',' enumerator
+               ;
+
+enumerator:
+          enumeration_constant
+          /*| enumeration_constant '=' constant_expression */
+          ;
+
+declarator:
+          direct_declarator
+          | pointer direct_declarator
+          ;
+
+direct_declarator:
+                 IDENT
+                 | '(' declarator ')'
+                 | direct_declarator '[' ']'
+                 | direct_declarator '[' NUMBER ']'
+                 | direct_declarator '(' ')'
+                 ;
+
+pointer:
+       '*'
+       | '*' type_qualifier_list
+       | '*' pointer
+       | '*' type_qualifier_list pointer
+       ;
+
+type_qualifier_list:
+                   type_qualifier
+                   | type_qualifier_list type_qualifier
+                   ;
+
+identifier_list:
+               IDENT
+               | identifier_list ',' IDENT
+               ;
+
+type_name:
+         specifier_quantifier_list
+         | specifier_quantifier_list abstract_declarator
+         ;
+
+abstract_declarator:
+                   pointer
+                   | pointer direct_abstract_declarator
+                   | direct_abstract_declarator
+                   ;
+
+direct_abstract_declarator:
+                          '(' abstract_declarator ')'
+                          | '[' ']'
+                          | direct_abstract_declarator '[' ']'
+                          | '[' assignment_expression ']'
+                          | direct_abstract_declarator '[' assignment_expression ']'
+                          | '[' '*' ']'
+                          | direct_abstract_declarator '[' '*' ']'
+                          | '(' ')'
+                          | direct_abstract_declarator '(' ')'
+                          ;
+
+    /* skipped 6.7.8 initialization */
+
+statement:
+         labeled_statement
+         | compound_statement
+         | expression_statement
+         /*| selection_statement*/
+         /*| iteration_statement*/
+         | jump_statement
+         ;
+
+labeled_statement:
+                 IDENT ':' statement
+                 /*CASE constant_expression ':' statement*/
+                 /*DEFAULT ':' statement*/
+                 ;
+
+compound_statement:
+                  '{' '}'
+                  |'{' block_item_list '}'
+                  ;
+
+block_item_list:
+               block_item
+               | block_item_list block_item
+               ;
+
+block_item:
+          declaration
+          | statement
+          ;
+
+expression_statement:
+                    expression ';'
+                    | ';'
+                    ;
+
+jump_statement:
+              GOTO IDENT ';'
+              | CONTINUE ';'
+              | BREAK ';'
+              | RETURN ';'
+              | RETURN expression ';'
+              ;
+
+function_definition:
+                   declaration_specifiers declarator compound_statement
+                   | declaration_specifiers declarator declarator_list compound_statement
+                   ;
+
+declaration_list:
+                declaration
+                | declaration_list declaration
+                ;
+
+external_declaration:
+                    function_definition
+                    | declaration
+                    ;
+
 start:
      terminal start {
         if(root!=NULL) astprint(root);

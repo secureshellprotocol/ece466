@@ -1,56 +1,43 @@
-typedef struct symtab_element_t {
-    char *key;
-    int occupied;
+#ifndef __SYMTAB_H_JR
+#define __SYMTAB_H_JR
 
+#include <ast/ast.h>
+
+/* Symbol table is just a null-terminated linked-list of elements.
+ * to create a symtab, you create it's scope, and it contains 3 lists, each 
+ * set to NULL.
+ * Then, as you find stuff, you add it to the list. Must be easy
+ */
+
+enum {
+    NS_LABELS,
+    NS_SUE,
+    NS_IDENTS
+};
+
+typedef struct symtab_elem_t {
     ast_node *n;
-} symtab_element;
+    char *file_origin;
+    unsigned int line_no_origin;
 
-typedef struct symtab_t {
-    unsigned int filled;    // num of slots filled in elements array
-    unsigned int max_cap;   // total capacity of elements array
-
-    ast_node **elems;
-} symtab;
+    struct symtab_elem_t *next;
+} symtab_elem;
 
 typedef struct symbol_scope_t {
     struct symbol_scope_t *previous;
 
-    symtab *label_names;    //labels
-    symtab *sue_tags;       //struct, union, enum tags
-    symtab *identifiers;    //idents ("everything else")
-} symbol_scope
+    symtab_elem *identifiers;    //idents ("everything else")
+    symtab_elem *label_names;    //labels
+    symtab_elem *sue_tags;       //struct, union, enum tags - members are
+                                 //     implicit
+} symbol_scope;
 
-// Returns a valid pointer to a symbol table, or a null pointer if it failed to
-// allocate
-symtab *t symtab_create()
-{
+symbol_scope *symtab_create();
 
-}
+void symtab_destroy(symbol_scope *);
 
-// Insert node into symbol table
-// If needed, perform in-place rehash
-//  If this fails, the symbol table is untouched, and we return 2
-// 0 - Success
-// 1 - Key exists in table
-int symtab_insert(symtab *t, ast_node *n)
-{
-    if((t->filled)/2 < max_cap)
-    {
-        int ret_val = rehash(symtab *t);
-        if(ret_val == 2) { return 2; }
-    }
-}
+symtab_elem *symtab_lookup(symbol_scope *, char *name, int ns);
 
-// Check if symbol table contains key
-// 0 - Not contained
-// 1 - Contains key
-int symtab_contains()
-{
+int symtab_enter(symbol_scope *, char *name, int ns, attr_list *l);
 
-}
-
-// Frees a given symbol table *t.
-void symtab_free(symtab *t)
-{
-
-}
+#endif
