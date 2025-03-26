@@ -32,7 +32,7 @@ typedef struct symbol_scope_t {
                                  //     implicit
 } symbol_scope;
 
-symbol_scope *symtab_create();
+symbol_scope *symtab_create(symbol_scope *);
 
 void symtab_destroy(symbol_scope *);
 
