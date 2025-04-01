@@ -14,13 +14,17 @@
 #include <ast/ast.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
+#include <symtab/symtab.h>
 
 // ease compiler complaints
 int yylex();
 void yyerror(const char *s);
 
-// tree root
-ast_node *root;
+// file scope
+symbol_scope file;
+file = symtab_create(NULL);
+
+symbol_scope *current = &file;
 
 extern FILE *yyin;
 %}
@@ -113,7 +117,7 @@ extern FILE *yyin;
 
 %%
 
-primary_expression:
+primary_expresion:
                   IDENT {   /* lexer is performing a strdup,
                         therefore value is in stable storage. */
                     $$.n = ast_create_ident($1);
@@ -338,15 +342,18 @@ expression:
           }
           ;
           
-terminal:
-        expression ';'  {
-            root = $$.n;
-        }
-        ;
+        /*terminal:
+                expression ';'  {
+                    root = $$.n;
+                }
+                ;*/
 
 
 declaration:
-           declaration_specifiers ';'
+           declaration_specifiers initialized_declarator_list ';'   {
+            // install into current scope
+            
+           }
            ;
 
 declaration_specifiers:
@@ -360,28 +367,67 @@ declaration_specifiers:
                       | function_specifier declaration_specifiers
                       ;
 
+initialized_declarator_list:
+                           initialized_declarator
+                           | initalized_declarator_list ',' initalized_declarator
+                           ;
+
+initalized_declarator:
+                     declarator 
+                     /*| declarator '=' initializer //skipped */
+                     ;
+
+
 storage_class_specifier:
-                       TYPEDEF
-                       | EXTERN
-                       | STATIC
-                       | AUTO
-                       | REGISTER
+                       TYPEDEF  {
+                        TAG_SET($$.stgclass, SC_TYPEDEF);
+                       }
+                       | EXTERN     {
+                        TAG_SET($$.stgclass, SC_EXTERN);
+                       }
+                       | STATIC     {
+                        TAG_SET($$.stgclass, SC_STATIC);
+                       }
+                       | AUTO       {
+                        TAG_SET($$.stgclass, SC_AUTO);
+                       }
+                       | REGISTER   {
+                        TAG_SET($$.stgclass, SC_REGISTER);
+                       }
                        ;
 
 type_specifier:
-              VOID
-              | CHAR
-              | SHORT
-              | INT
-              | LONG
-              | FLOAT
-              | DOUBLE
-              | SIGNED
-              | UNSIGNED
-              | BOOL
-              | COMPLEX
+              VOID      {
+                tag_set($$.typespecs, TS_VOID);
+              }
+              | CHAR      {
+                tag_set($$.typespecs, TS_CHAR);
+              }
+              | SHORT      {
+                tag_set($$.typespecs, TS_SHORT);
+              }
+              | INT      {
+                tag_set($$.typespecs, TS_INT);
+              }
+              | LONG      {
+                tag_set($$.typespecs, TS_LONG);
+              }
+              | FLOAT      {
+                tag_set($$.typespecs, TS_FLOAT);
+              }
+              | DOUBLE      {
+                tag_set($$.typespecs, TS_DOUBLE);
+              }
+              | SIGNED      {
+                tag_set($$.typespecs, TS_SIGNED);
+              }
+              | UNSIGNED      {
+                tag_set($$.typespecs, TS_UNSIGNED);
+              }
+              | BOOL      {
+                tag_set($$.typespecs, TS_CHAR);
+              }
               | struct_or_union_specifier
-              | enum_specifier
               ;
 
     /*function_specifier:*/
@@ -389,19 +435,35 @@ type_specifier:
                       /*;*/
 
 type_qualifier:
-              CONST
-              | RESTRICT
-              | VOLATILE
+              CONST {
+                TAG_SET($$.typequals, TQ_CONST);
+              }
+              | RESTRICT    {
+                TAG_SET($$.typequals, TQ_RESTRICT);
+              }
+              | VOLATILE    {
+                TAG_SET($$.typequals, TQ_VOLATILE);
+              }
               ;
 
 struct_or_union_specifier:
-                         struct_or_union '{' struct_declaration_list '}'
-                         | struct_or_union IDENT '{' struct_declaration_list '}'
-                         | struct_or_union IDENT
+                         struct_or_union '{' struct_declaration_list '}'    {
+                            // no name
+                         }
+                         | struct_or_union IDENT '{' struct_declaration_list '}' {
+                            $1.n->name = ast_create_ident($2);
+                         }
+                         | struct_or_union IDENT    {
+                            $1.n->name = ast_create_ident($2);
+                         }
                          ;
 struct_or_union:
-               STRUCT
-               | UNION
+               STRUCT   {
+                $$.n = ast_create_sue(STRUCT);
+               }
+               | UNION  {
+                $$.n = ast_create_sue(UNION);
+               }
                ;
 
 struct_declaration_list:
@@ -430,23 +492,6 @@ struct_declarator:
                  declarator
                  ;
 
-enum_specifier:
-              ENUM '{' enumerator_list '}'
-              | ENUM IDENT '{' enumerator_list '}'
-              | ENUM '{' enumerator_list ',' '}'
-              | ENUM IDENT '{' enumerator_list ',' '}'
-              | ENUM IDENT
-              ;
-
-enumerator_list:
-               enumerator
-               | enumerator_list ',' enumerator
-               ;
-
-enumerator:
-          enumeration_constant
-          /*| enumeration_constant '=' constant_expression */
-          ;
 
 declarator:
           direct_declarator
@@ -454,28 +499,55 @@ declarator:
           ;
 
 direct_declarator:
-                 IDENT
-                 | '(' declarator ')'
-                 | direct_declarator '[' ']'
-                 | direct_declarator '[' NUMBER ']'
-                 | direct_declarator '(' ')'
+                 IDENT  {
+                    $$.n = ast_create_ident($1);
+                 }
+                 | '(' declarator ')'   { $$ = $2 }
+                 | direct_declarator '[' ']'    { 
+                    $$.n = ast_create_array(NULL);  // incomplete
+                 }
+                 | direct_declarator '[' NUMBER ']' {
+                    $$.n = ast_create_array(ast_create_num($3));
+                 }
+                 | direct_declarator '(' ')'    {
+                    $$.n = ast_create_func($1.n, NULL);
+                 }
                  ;
 
 pointer:
-       '*'
-       | '*' type_qualifier_list
-       | '*' pointer
-       | '*' type_qualifier_list pointer
+       '*'  {
+        $$.n = ast_create_ptr(NULL);
+       }
+       | '*' type_qualifier_list    {
+        $$.n = ast_create_ptr(NULL);
+        $$.n->typequals = $2.typequals;
+       }
+       | '*' pointer    {
+        $$.n = ast_create_ptr($2.n);
+       }
+       | '*' type_qualifier_list pointer    {
+        $$.n = ast_create_ptr($3.n);
+        $$.n->typequals = $2.typequals;
+       }
        ;
 
 type_qualifier_list:
-                   type_qualifier
-                   | type_qualifier_list type_qualifier
+                   type_qualifier   {
+                    $$ = $1;
+                   }
+                   | type_qualifier_list type_qualifier {
+                    $$.n->typequals = 
+                        tagappend($1.n->typequals, $2.n->typequals);
+                   }
                    ;
 
 identifier_list:
-               IDENT
-               | identifier_list ',' IDENT
+               IDENT    {
+                $$.n = ast_list_start(ast_create_ident($1));
+               }
+               | identifier_list ',' IDENT  {
+                $$.n = ast_list_insert($1.n, $3.n);
+               }
                ;
 
 type_name:
@@ -561,14 +633,16 @@ external_declaration:
                     | declaration
                     ;
 
+
 start:
-     terminal start {
-        if(root!=NULL) astprint(root);
-     }  
-     | terminal   {
-        if(root!=NULL) astprint(root);
+     external_declaration start {
+        
+     }
+     | external_declaration {
+        
      }
      ;
+
 %%
 
 int main(int argc, char* argv[])

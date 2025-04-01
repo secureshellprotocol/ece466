@@ -104,6 +104,11 @@ ast_node *ast_create_func(
     return n;
 }
 
+ast_node *ast_create_array( ast_node *n )
+{
+    
+}
+
 // walks up node tree and deletes each node
 // NO PROTECTION -- ADD A REFERENCE COUNT QUESTION MARK????
 // Hak -- i know this isnt required, but i wanted to try anyways

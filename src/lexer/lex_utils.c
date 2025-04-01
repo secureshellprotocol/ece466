@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include <james_utils.h>
 #include <lexer/lexer.lex.h>
 #include <parser/grammar.tab.h>
 
@@ -62,7 +63,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                     goto error;
                 }
 
-                tags |= U_BIT;
+                TAG_SET(tags, U_BIT);
                 break;
             case 'L': case 'l':
                 switch(IS_FLOATING(tags))
@@ -74,12 +75,12 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                     }
                     if((tags & L_BIT) == L_BIT)
                     {
-                        tags |= LL_BIT;
-                        tags &= ~(L_BIT);
+                        TAG_SET(tags, LL_BIT);
+                        TAG_UNSET(tags, L_BIT);
                     }
                     else
                     {
-                        tags |= L_BIT;
+                        TAG_SET(tags, L_BIT);
                     }
                     break;
                 default:    // real
@@ -88,7 +89,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                         goto error;
                     }
                     
-                    tags |= L_BIT;
+                    TAG_SET(tags, L_BIT);
                     break;
                 }
                 break;
@@ -98,7 +99,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                     goto error;
                 }
                 
-                tags &= ~(D_BIT);
+                TAG_UNSET(tags, D_BIT);
                 break;
             default:
                 return tags;
@@ -109,7 +110,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
     return tags;
 
 error:
-    tags |= INVAL_BIT;
+    TAG_SET(tags, INVAL_BIT);
     return tags;
 }
 
@@ -325,4 +326,16 @@ char *get_token_id(int token_code)
             break;
     }
     return id;
+}
+
+uint32_t tagappend(uint32_t tags, uint32_t new_tag)
+{
+    if( ((tags & new_tag)) )
+    {
+        STDERR_F("tagappend: Type conflict! trying to append %d to taglist %d",
+                new_tag, tags);
+        TAG_SET(tags, INVAL_BIT);
+    }
+    TAG_SET(tags, new_tag);
+    return tags;
 }

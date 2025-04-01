@@ -381,29 +381,29 @@ int main(int argc, char* argv[])
 
         switch(t){
             case NUMBER:
-                if(IS_INVAL(yylval.tags))
+                if(LEX_IS_INVAL(yylval.tags))
                 {
                     printf( "INVALID");
                     break;
                 }
-                if(IS_FLOATING(yylval.tags))
+                if(LEX_IS_FLOATING(yylval.tags))
                 {
                     printf(" REAL %Lg ", yylval.ldf);
                 }
                 else printf(" INTEGER %lld ", yylval.ulld);
-                if(IS_UNSIGNED(yylval.tags))
+                if(LEX_IS_UNSIGNED(yylval.tags))
                 {
                     printf(" UNSIGNED ");
                 }
-                if(IS_LONG(yylval.tags))
+                if(LEX_IS_LONG(yylval.tags))
                 {
                     printf(" LONG ");
                 }
-                if(IS_LLONG(yylval.tags))
+                if(LEX_IS_LLONG(yylval.tags))
                 {
                     printf(" LONG LONG ");
                 }
-                if(IS_DOUBLE(yylval.tags))
+                if(LEX_IS_DOUBLE(yylval.tags))
                 {
                     printf(" DOUBLE ");
                 }
