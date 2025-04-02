@@ -67,10 +67,17 @@ struct ast_node_scalar_t {
     uint32_t typetags;
 };
 
-struct ast_node_array_t {
-    ast_node *to;
-    ast_node *size; // NULL => incomplete
-};
+//struct type_array {
+//    unsigned int size;
+//};
+//
+//struct ast_node_type_t {
+//    enum tokens t;
+//    union {
+//        struct type_array a;
+//    };
+//};
+
 
 struct ast_node_func_t {
     ast_node *label;
@@ -80,10 +87,10 @@ struct ast_node_func_t {
     uint32_t typetags;
 };
 
-struct ast_node_ptr_t {
-    ast_node *to;
-    uint32_t typequals;
-};
+//struct ast_node_ptr_t {
+//    ast_node *to;
+//    uint32_t typequals;
+//};
 
 struct ast_node_sue_t {
     ast_node *name; // NULL => anon
@@ -104,12 +111,12 @@ typedef struct ast_node_t {
         struct ast_node_ternop_t ternop;
     
         struct ast_list_t list;
+        
 
         // decls
         struct ast_node_scalar_t sc;
-        struct ast_node_array_t ar;
         struct ast_node_func_t func;
-        struct ast_node_ptr_t ptr;
+        struct ast_node_type_t type;
     };
 } ast_node;
 

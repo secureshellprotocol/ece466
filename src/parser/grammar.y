@@ -380,52 +380,52 @@ initalized_declarator:
 
 storage_class_specifier:
                        TYPEDEF  {
-                        TAG_SET($$.stgclass, SC_TYPEDEF);
+                        $$.n = ast_create_type(TYPEDEF);
                        }
                        | EXTERN     {
-                        TAG_SET($$.stgclass, SC_EXTERN);
+                        $$.n = ast_create_type(EXTERN);
                        }
                        | STATIC     {
-                        TAG_SET($$.stgclass, SC_STATIC);
+                        $$.n = ast_create_type(STATIC);
                        }
                        | AUTO       {
-                        TAG_SET($$.stgclass, SC_AUTO);
+                        $$.n = ast_create_type(AUTO);
                        }
                        | REGISTER   {
-                        TAG_SET($$.stgclass, SC_REGISTER);
+                        $$.n = ast_create_type(REGISTER);
                        }
                        ;
 
 type_specifier:
               VOID      {
-                tag_set($$.typespecs, TS_VOID);
+                $$.n = ast_create_type(VOID);
               }
               | CHAR      {
-                tag_set($$.typespecs, TS_CHAR);
+                $$.n = ast_create_type(CHAR);
               }
               | SHORT      {
-                tag_set($$.typespecs, TS_SHORT);
+                $$.n = ast_create_type(SHORT);
               }
               | INT      {
-                tag_set($$.typespecs, TS_INT);
+                $$.n = ast_create_type(INT);
               }
               | LONG      {
-                tag_set($$.typespecs, TS_LONG);
+                $$.n = ast_create_type(LONG);
               }
               | FLOAT      {
-                tag_set($$.typespecs, TS_FLOAT);
+                $$.n = ast_create_type(FLOAT);
               }
               | DOUBLE      {
-                tag_set($$.typespecs, TS_DOUBLE);
+                $$.n = ast_create_type(DOUBLE);
               }
               | SIGNED      {
-                tag_set($$.typespecs, TS_SIGNED);
+                $$.n = ast_create_type(SIGNED);
               }
               | UNSIGNED      {
-                tag_set($$.typespecs, TS_UNSIGNED);
+                $$.n = ast_create_type(UNSIGNED);
               }
               | BOOL      {
-                tag_set($$.typespecs, TS_CHAR);
+                $$.n = ast_create_type(CHAR);
               }
               | struct_or_union_specifier
               ;
@@ -436,13 +436,13 @@ type_specifier:
 
 type_qualifier:
               CONST {
-                TAG_SET($$.typequals, TQ_CONST);
+                $$.n = ast_create_type(CONST);
               }
               | RESTRICT    {
-                TAG_SET($$.typequals, TQ_RESTRICT);
+                $$.n = ast_create_type(RESTRICT);
               }
               | VOLATILE    {
-                TAG_SET($$.typequals, TQ_VOLATILE);
+                $$.n = ast_create_type(VOLATILE);
               }
               ;
 
@@ -467,8 +467,12 @@ struct_or_union:
                ;
 
 struct_declaration_list:
-                       struct_declaration
-                       | struct_declaration_list struct_declaration
+                       struct_declaration   {
+                        $$.n = ast_list_start($1.n);
+                       }
+                       | struct_declaration_list struct_declaration {
+                        $$.n = ast_list_insert($1.n, $2.n);
+                       }
                        ;
 
 struct_declaration:
@@ -476,26 +480,45 @@ struct_declaration:
                   ;
 
 specifier_quantifier_list:
-                         type_specifier
-                         | type_specifier specifier_quantifier_list
-                         | type_quantifier
-                         | type_quantifier type_quantifier_list
+                         type_specifier {
+                            $$.n = ast_list_start($1.n);
+                         }
+                         | specifier_quantifier_list type_specifier {
+                            $$.n = ast_list_insert($1.n, $2.n);
+                         }
+                         | type_quantifier  {   /* sus */
+                            $$.n = ast_list_start($1.n);
+                         }
+                         | type_quantifier_list type_quantifier {
+                            $$.n = ast_list_insert($1.n, $2.n);
+                         }
                          ;
 
 struct_declarator_list:
-                      struct_declarator
-                      | struct_declarator_list ',' struct_declarator
+                      struct_declarator {
+                        $$.n = ast_list_start($1.n);
+                      }
+                      | struct_declarator_list ',' struct_declarator    {
+                        $$.n = ast_list_insert($1.n, $3.n);
+                      }
                       ;
 
     /* not doing bitfields */
 struct_declarator:
-                 declarator
+                 declarator {
+                    $$ = $1;
+                 }
                  ;
 
 
 declarator:
-          direct_declarator
-          | pointer direct_declarator
+          direct_declarator {
+            $$ = $1;
+          }
+          | pointer direct_declarator   {
+            $1.n->to = $2.n;
+            $$ = $1;
+          }
           ;
 
 direct_declarator:
@@ -533,11 +556,10 @@ pointer:
 
 type_qualifier_list:
                    type_qualifier   {
-                    $$ = $1;
+                    $$.n = ast_list_start($1.n);
                    }
                    | type_qualifier_list type_qualifier {
-                    $$.n->typequals = 
-                        tagappend($1.n->typequals, $2.n->typequals);
+                    $$.n - ast_list_insert($1.n, $2.n);
                    }
                    ;
 
@@ -551,8 +573,12 @@ identifier_list:
                ;
 
 type_name:
-         specifier_quantifier_list
-         | specifier_quantifier_list abstract_declarator
+         specifier_quantifier_list  {
+            $$.n = ast_list_start($1.n);
+         }
+         | specifier_quantifier_list abstract_declarator    {
+            $$.n = ast_list_insert($1.n, $2.n);
+         }
          ;
 
 abstract_declarator:
@@ -563,9 +589,13 @@ abstract_declarator:
 
 direct_abstract_declarator:
                           '(' abstract_declarator ')'
-                          | '[' ']'
+                          | '[' ']' {
+                            $$.n = ast_create_array(NULL)
+                          }
                           | direct_abstract_declarator '[' ']'
-                          | '[' assignment_expression ']'
+                          | '[' assignment_expression ']'   {
+                            $$.n = ast_create_array($2.n);
+                          }
                           | direct_abstract_declarator '[' assignment_expression ']'
                           | '[' '*' ']'
                           | direct_abstract_declarator '[' '*' ']'
