@@ -166,12 +166,12 @@ postfix_expression:
                   | postfix_expression MINUSMINUS   {
                     $$.n = ast_create_unaop(MINUSMINUS, $1.n);
                   }
-                  | '(' type_name ')' '{' initializer_list '}' {
+                  /*| '(' type_name ')' '{' initializer_list '}' {
                     $$.n = ast_create_func(NULL, $2.n, $5.n);
                   }
                   | '(' type_name ')' '{' initializer_list ',' '}'  {
                     $$.n = ast_create_func(NULL, $2.n, $5.n);
-                  }
+                  }*/
                   ;
 
 argument_expression_list:
@@ -409,10 +409,10 @@ initialized_declarator_list:
 
 initialized_declarator:
                      declarator { $$ = $1; } 
-                     | declarator '=' initializer   {
+                     /*| declarator '=' initializer   {
                         $$.n = ast_create_binop('=', $1.n, $3.n);
                         //KLUDGE
-                     }
+                     }*/
                      ;
 
 
@@ -483,11 +483,11 @@ type_qualifier:
               ;
     
 
-specifier_quantifier_list:
+specifier_qualifier_list:
                          type_specifier {
                             $$.n = ast_list_start($1.n);
                          }
-                         | specifier_quantifier_list type_specifier {
+                         | specifier_qualifier_list type_specifier {
                             $$.n = ast_list_insert($1.n, $2.n);
                          }
                          | type_qualifier  {   /* sus */
@@ -561,7 +561,7 @@ type_qualifier_list:
                     $$.n = ast_list_start($1.n);
                    }
                    | type_qualifier_list type_qualifier {
-                    $$.n - ast_list_insert($1.n, $2.n);
+                    $$.n = ast_list_insert($1.n, $2.n);
                    }
                    ;
 
@@ -575,10 +575,10 @@ type_qualifier_list:
                ;*/
 
 type_name:
-         specifier_quantifier_list  {
+         specifier_qualifier_list  {
             $$.n = ast_list_start($1.n);
          }
-         | specifier_quantifier_list abstract_declarator    {
+         | specifier_qualifier_list abstract_declarator    {
             $$.n = ast_list_insert($1.n, $2.n);
          }
          ;
@@ -602,9 +602,9 @@ direct_abstract_declarator:
                           | '[' assignment_expression ']'   {
                             $$.n = ast_create_array($2.n);
                           }
-                          | direct_abstract_declarator '[' assignment_expression ']'
-                          | '[' '*' ']'
-                          | direct_abstract_declarator '[' '*' ']'
+                          | direct_abstract_declarator '[' NUMBER ']'
+                          /*| '[' '*' ']'
+                          | direct_abstract_declarator '[' '*' ']'*/
                           | '(' ')'
                           | direct_abstract_declarator '(' ')'
                           ;
