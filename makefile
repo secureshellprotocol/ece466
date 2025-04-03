@@ -4,7 +4,7 @@ YACC=bison
 YFLAGS=-t --language=C
 CFLAGS=-g -Wall -pedantic -Iinclude/
 
-all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/ast_list.o obj/astprint.o
+all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/ast_list.o obj/astprint.o obj/types.o
 	$(CC) $(CFLAGS) obj/*.o 
 
 .PHONY: objtrigger
@@ -19,11 +19,15 @@ obj/grammar.o: src/parser/grammar.y
 		-v --report-file=.grammar-debug.output \
 		--output=src/parser/grammar.tab.c \
 		--token-table \
+		-Wcex \
 		src/parser/grammar.y
 	$(CC) $(CFLAGS) -c src/parser/grammar.tab.c -o obj/grammar.o
 	
 obj/ast.o: src/ast/ast.c
 	$(CC) $(CFLAGS) -c src/ast/ast.c -o obj/ast.o
+
+obj/types.o: src/ast/ast.c
+	$(CC) $(CFLAGS) -c src/ast/types.c -o obj/ast.o
 
 obj/ast_list.o: src/ast/ast_list.c
 	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o

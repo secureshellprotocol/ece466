@@ -11,20 +11,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <james_utils.h>
 #include <ast/ast.h>
+#include <ast/types.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
-#include <symtab/symtab.h>
+#include <parser/grammar.tab.h>
+#include <parser/op.h>
 
 // ease compiler complaints
 int yylex();
 void yyerror(const char *s);
 
 // file scope
-symbol_scope file;
-file = symtab_create(NULL);
+//symbol_scope file;
+//file = symtab_create(NULL);
 
-symbol_scope *current = &file;
+//symbol_scope *current = &file;
 
 extern FILE *yyin;
 %}
@@ -143,10 +146,10 @@ postfix_expression:
                     $$.n = ast_create_unaop('*', add);
                   }
                   | postfix_expression '(' ')'  {
-                    $$.n = ast_create_func($1.n, NULL);
+                    $$.n = ast_create_func($1.n, NULL, NULL);
                   }
                   | postfix_expression '(' argument_expression_list ')' {
-                    $$.n = ast_create_func($1.n, $3.n);
+                    $$.n = ast_create_func($1.n, $3.n, NULL);
                   }
                   | postfix_expression '.' IDENT    {
                     $$.n = ast_create_binop('.', $1.n,
@@ -162,6 +165,12 @@ postfix_expression:
                   }
                   | postfix_expression MINUSMINUS   {
                     $$.n = ast_create_unaop(MINUSMINUS, $1.n);
+                  }
+                  | '(' type_name ')' '{' initializer_list '}' {
+                    $$.n = ast_create_func(NULL, $2.n, $5.n);
+                  }
+                  | '(' type_name ')' '{' initializer_list ',' '}'  {
+                    $$.n = ast_create_func(NULL, $2.n, $5.n);
                   }
                   ;
 
@@ -190,6 +199,9 @@ unary_expression:
                 | SIZEOF unary_expression   { 
                     $$.n = ast_create_unaop(SIZEOF, $2.n);
                 }
+                | SIZEOF '(' type_name ')'  {
+                    $$.n = ast_create_unaop(SIZEOF, $3.n);
+                }
                 ;
 
 unary_operator:
@@ -201,9 +213,12 @@ unary_operator:
               | '!' {$$.ulld = '!';}
               ;
 
-/* temporary kludge __ we dont have typing *yet* */
 cast_expression:
                unary_expression { $$ = $1; }
+               | '(' type_name ')' cast_expression  {
+                $$.n = ast_create_binop(TYPECAST, $2.n, $4.n);
+               }
+               ;
 
 multiplicative_expression:
                          cast_expression    { $$ = $1; }
@@ -336,12 +351,16 @@ assignment_operator:
                    ;
 
 expression:
-          assignment_expression { $$ = $1; }
+          assignment_expression { $$.n = ast_list_start($1.n); }
           | expression ',' assignment_expression {
-            $$.n = ast_create_binop(',', $1.n, $3.n);
+            $$.n = ast_list_insert($1.n, $3.n);
           }
           ;
-          
+
+constant_expression:
+                   conditional_expression { $$ = $1; }
+                   ;
+
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_create_decl($1.n, $2.n); 
@@ -367,22 +386,33 @@ declaration_specifiers:
                       | type_qualifier declaration_specifiers   {
                         $$.n = ast_list_insert($2.n, $1.n);
                       }
-                      /*| function_specifier*/
-                      /*| function_specifier declaration_specifiers*/
+                      /*| function_specifier  {
+                        $$.n = ast_list_start($1.n);
+                      }
+                      | function_specifier declaration_specifiers   {
+                        $$.n = ast_list_insert($2.n, $1.n);
+                      }*/
                       ;
 
+/*function_specifier:
+                  INLINE {
+                    $$.n = ast_create_type(INLINE);
+                  }
+                  ;
+*/
 initialized_declarator_list:
-                           initialized_declarator   {
-                            $$.n = ast_list_start($1.n);
-                           }
+                           initialized_declarator   { $$ = $1; }
                            | initialized_declarator_list ',' initialized_declarator   {
-                            $$.n = ast_list_insert($3.n, $1.n);
+                            $$.n = ast_create_binop(',', $1.n, $3.n);
                            }
                            ;
 
 initialized_declarator:
                      declarator { $$ = $1; } 
-                     /*| declarator '=' initializer //skipped */
+                     | declarator '=' initializer   {
+                        $$.n = ast_create_binop('=', $1.n, $3.n);
+                        //KLUDGE
+                     }
                      ;
 
 
@@ -438,9 +468,7 @@ type_specifier:
               /*| struct_or_union_specifier */
               ;
 
-    /*function_specifier:*/
-                      /*INLINE*/
-                      /*;*/
+    /* struct enum skipped */
 
 type_qualifier:
               CONST {
@@ -453,8 +481,7 @@ type_qualifier:
                 $$.n = ast_create_type(VOLATILE);
               }
               ;
-
-    /* structs skipped */
+    
 
 specifier_quantifier_list:
                          type_specifier {
@@ -471,7 +498,7 @@ specifier_quantifier_list:
                          }
                          ;
 
-struct_declarator_list:
+/*struct_declarator_list:
                       struct_declarator {
                         $$.n = ast_list_start($1.n);
                       }
@@ -481,11 +508,11 @@ struct_declarator_list:
                       ;
 
     /* not doing bitfields */
-struct_declarator:
+/*struct_declarator:
                  declarator {
                     $$ = $1;
                  }
-                 ;
+                 ;*/
 
 
 declarator:
@@ -493,7 +520,7 @@ declarator:
             $$ = $1;
           }
           | pointer direct_declarator   {
-            $1.n->to = $2.n;
+            $1.n->binop.right = $2.n;
             $$ = $1;
           }
           ;
@@ -502,7 +529,7 @@ direct_declarator:
                  IDENT  {
                     $$.n = ast_create_ident($1);
                  }
-                 | '(' declarator ')'   { $$ = $2 }
+                 | '(' declarator ')'   { $$ = $2; }
                  | direct_declarator '[' ']'    { 
                     $$.n = ast_create_array($1.n, NULL);  // incomplete
                  }
@@ -510,24 +537,22 @@ direct_declarator:
                     $$.n = ast_create_array($1.n, ast_create_num($3));
                  }
                  | direct_declarator '(' ')'    {
-                    $$.n = ast_create_func($1.n, NULL);
+                    $$.n = ast_create_func($1.n, NULL, NULL);
                  }
                  ;
 
-pointer:
+pointer:    /* refactor */
        '*'  {
-        $$.n = ast_create_ptr(NULL);
+        $$.n = ast_create_binop(POINTER, NULL, NULL);
        }
        | '*' type_qualifier_list    {
-        $$.n = ast_create_ptr(NULL);
-        $$.n->typequals = $2.typequals;
+        $$.n = ast_create_binop(POINTER, $2.n, NULL);
        }
        | '*' pointer    {
-        $$.n = ast_create_ptr($2.n);
+        $$.n = ast_create_binop(POINTER, NULL, $2.n);
        }
        | '*' type_qualifier_list pointer    {
-        $$.n = ast_create_ptr($3.n);
-        $$.n->typequals = $2.typequals;
+        $$.n = ast_create_binop(POINTER, $2.n, $3.n);
        }
        ;
 
@@ -540,14 +565,14 @@ type_qualifier_list:
                    }
                    ;
 
-identifier_list:
+/*identifier_list:
                IDENT    {
                 $$.n = ast_list_start(ast_create_ident($1));
                }
                | identifier_list ',' IDENT  {
                 $$.n = ast_list_insert($1.n, $3.n);
                }
-               ;
+               ;*/
 
 type_name:
          specifier_quantifier_list  {
@@ -561,7 +586,7 @@ type_name:
 abstract_declarator:
                    pointer  { $$ = $1; }
                    | pointer direct_abstract_declarator {
-                    $1.n->ptr.to = $2.n;
+                    $1.n->binop.right = $2.n;
                     $$ = $1;
                    }
                    | direct_abstract_declarator { $$ = $1; }
@@ -570,21 +595,49 @@ abstract_declarator:
 direct_abstract_declarator:
                           '(' abstract_declarator ')'
                           | '[' ']' {
-                            $$.n = ast_create_array(NULL)
+                            $$.n = ast_create_array(NULL);
                           }
-                          | direct_abstract_declarator '[' ']'
+                          | direct_abstract_declarator '[' ']'  {
+                          }
                           | '[' assignment_expression ']'   {
                             $$.n = ast_create_array($2.n);
                           }
                           | direct_abstract_declarator '[' assignment_expression ']'
-                          /*| '[' '*' ']'*/
-                          /*| direct_abstract_declarator '[' '*' ']'*/
+                          | '[' '*' ']'
+                          | direct_abstract_declarator '[' '*' ']'
                           | '(' ')'
                           | direct_abstract_declarator '(' ')'
                           ;
 
-    /* skipped 6.7.8 initialization */
 
+initializer:
+           assignment_expression
+           | '{' initializer_list '}'
+           | '{' initializer_list ',' '}'
+           ;
+
+initializer_list:
+                designation initializer
+                | initializer
+                | initializer_list ',' designator initializer
+                | initializer_list ',' initializer
+                ;
+
+designation:
+           designator_list '='
+           ;
+
+designator_list:
+               designator
+               | designator_list designator
+               ;
+
+designator:
+          '[' constant_expression ']'
+          | '.' IDENT
+          ;
+
+/*
 statement:
          compound_statement { $$ = $1; }
          | expression_statement { $$ = $1; }
@@ -594,7 +647,7 @@ expression_statement:
                     ';' { $$ = $1; } 
                     | expression ';' { $$ = $1; }
                     ;
-
+*/
 compound_statement:
                   '{' '}'   {
                     $$.n = ast_create_ident(NULL);
@@ -607,13 +660,13 @@ function_definition:
                    /*| declaration_specifiers declarator declarator_list compound_statement */
                    ;
 
-declaration_list:
+/*declaration_list:
                 declaration { $$.n = ast_list_start($1.n); }
                 | declaration_list declaration  {
                     $$.n = ast_list_insert($1.n, $2.n);
                 }
                 ;
-
+*/
 external_declaration:
                     function_definition { $$ = $1; }
                     | declaration   { $$ = $1; }

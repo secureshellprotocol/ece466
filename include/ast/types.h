@@ -22,6 +22,6 @@ struct ast_node_type_t {
 };
 
 ast_node *ast_create_type(uint32_t type_token);
-ast_node *ast_create_array(ast_node *s);
+ast_node *ast_create_array(ast_node *, ast_node *);
 
 #endif

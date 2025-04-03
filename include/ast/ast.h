@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <lexer/lexer.lex.h>
-#include <parser/op.h>
+#include <parser/grammar.tab.h>
 
 #define NUM_PROTOTYPES 10
 
@@ -15,7 +15,7 @@ typedef struct ast_node_t ast_node;
 // For unary operations -- an expression is what's being acted upon by the 
 //  operator. 
 struct ast_node_unaop_t {
-    enum tokens token;
+    int token;
     ast_node *expression;
 };
 
@@ -23,7 +23,7 @@ struct ast_node_unaop_t {
 //  defined by what is to the left, right, and possibly center.
 // eg: 2 + x, left would reference `2`, right references `x`.
 struct ast_node_binop_t {
-    enum tokens token;
+    int token;
 
     ast_node *left;
     ast_node *right;
@@ -92,7 +92,7 @@ struct ast_node_sue_t {
 };
 
 typedef struct ast_node_t {
-    enum tokens op_type;
+    int op_type;
     union {
         // terminals
         struct ast_node_ident_t ident;
@@ -119,7 +119,7 @@ typedef struct ast_node_t {
 
 // ast.c
 
-ast_node *create_node(enum tokens ot);
+ast_node *create_node(int ot);
 
 ast_node *ast_create_ident(struct yy_struct);
 ast_node *ast_create_num(struct yy_struct);
@@ -127,8 +127,8 @@ ast_node *ast_create_string(struct yy_struct);
 ast_node *ast_create_charlit(struct yy_struct);
 ast_node *ast_create_constant(unsigned long long int ulld);
 
-ast_node *ast_create_unaop(enum tokens token, ast_node *e);
-ast_node *ast_create_binop(enum tokens token, ast_node *l, ast_node *r);
+ast_node *ast_create_unaop(int token, ast_node *e);
+ast_node *ast_create_binop(int token, ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
 
 ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list);

@@ -62,7 +62,7 @@ ast_node *ast_create_charlit(struct yy_struct ys)
     return n;
 }
 
-ast_node *ast_create_unaop(enum tokens token, ast_node *e)
+ast_node *ast_create_unaop(int token, ast_node *e)
 {
     ast_node *n = create_node(UNAOP);
     n->unaop.token = token;
@@ -71,7 +71,7 @@ ast_node *ast_create_unaop(enum tokens token, ast_node *e)
     return n;
 }
 
-ast_node *ast_create_binop(enum tokens token, ast_node *l, ast_node *r)
+ast_node *ast_create_binop(int token, ast_node *l, ast_node *r)
 {
     ast_node *n = create_node(BINOP);
     n->binop.token = token;
