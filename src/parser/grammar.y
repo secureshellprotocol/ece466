@@ -117,7 +117,7 @@ extern FILE *yyin;
 
 %%
 
-primary_expresion:
+primary_expression:
                   IDENT {   /* lexer is performing a strdup,
                         therefore value is in stable storage. */
                     $$.n = ast_create_ident($1);
@@ -342,38 +342,46 @@ expression:
           }
           ;
           
-        /*terminal:
-                expression ';'  {
-                    root = $$.n;
-                }
-                ;*/
-
-
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            // install into current scope
-            
+            $$.n = ast_create_decl($1.n, $2.n); 
            }
            ;
 
 declaration_specifiers:
-                      storage_class_specifier
-                      | storage_class_spec declaration_specifiers
-                      | type_specifier
-                      | type_specifier declaration_specifiers
-                      | type_qualifier
-                      | type_qualifier declaration_specifiers
-                      | function_specifier
-                      | function_specifier declaration_specifiers
+                      storage_class_specifier   {
+                        $$.n = ast_list_start($1.n);
+                      }
+                      | storage_class_specifier declaration_specifiers   {
+                        $$.n = ast_list_insert($2.n, $1.n);
+                      }
+                      | type_specifier  {
+                        $$.n = ast_list_start($1.n);
+                      }
+                      | type_specifier declaration_specifiers{
+                        $$.n = ast_list_insert($2.n, $1.n);
+                      }
+                      | type_qualifier{
+                        $$.n = ast_list_start($1.n);
+                      }
+                      | type_qualifier declaration_specifiers   {
+                        $$.n = ast_list_insert($2.n, $1.n);
+                      }
+                      /*| function_specifier*/
+                      /*| function_specifier declaration_specifiers*/
                       ;
 
 initialized_declarator_list:
-                           initialized_declarator
-                           | initalized_declarator_list ',' initalized_declarator
+                           initialized_declarator   {
+                            $$.n = ast_list_start($1.n);
+                           }
+                           | initialized_declarator_list ',' initialized_declarator   {
+                            $$.n = ast_list_insert($3.n, $1.n);
+                           }
                            ;
 
-initalized_declarator:
-                     declarator 
+initialized_declarator:
+                     declarator { $$ = $1; } 
                      /*| declarator '=' initializer //skipped */
                      ;
 
@@ -427,7 +435,7 @@ type_specifier:
               | BOOL      {
                 $$.n = ast_create_type(CHAR);
               }
-              | struct_or_union_specifier
+              /*| struct_or_union_specifier */
               ;
 
     /*function_specifier:*/
@@ -446,38 +454,7 @@ type_qualifier:
               }
               ;
 
-struct_or_union_specifier:
-                         struct_or_union '{' struct_declaration_list '}'    {
-                            // no name
-                         }
-                         | struct_or_union IDENT '{' struct_declaration_list '}' {
-                            $1.n->name = ast_create_ident($2);
-                         }
-                         | struct_or_union IDENT    {
-                            $1.n->name = ast_create_ident($2);
-                         }
-                         ;
-struct_or_union:
-               STRUCT   {
-                $$.n = ast_create_sue(STRUCT);
-               }
-               | UNION  {
-                $$.n = ast_create_sue(UNION);
-               }
-               ;
-
-struct_declaration_list:
-                       struct_declaration   {
-                        $$.n = ast_list_start($1.n);
-                       }
-                       | struct_declaration_list struct_declaration {
-                        $$.n = ast_list_insert($1.n, $2.n);
-                       }
-                       ;
-
-struct_declaration:
-                  specifier_quantifier_list struct_declarator_list ';'
-                  ;
+    /* structs skipped */
 
 specifier_quantifier_list:
                          type_specifier {
@@ -486,10 +463,10 @@ specifier_quantifier_list:
                          | specifier_quantifier_list type_specifier {
                             $$.n = ast_list_insert($1.n, $2.n);
                          }
-                         | type_quantifier  {   /* sus */
+                         | type_qualifier  {   /* sus */
                             $$.n = ast_list_start($1.n);
                          }
-                         | type_quantifier_list type_quantifier {
+                         | type_qualifier_list type_qualifier {
                             $$.n = ast_list_insert($1.n, $2.n);
                          }
                          ;
@@ -527,10 +504,10 @@ direct_declarator:
                  }
                  | '(' declarator ')'   { $$ = $2 }
                  | direct_declarator '[' ']'    { 
-                    $$.n = ast_create_array(NULL);  // incomplete
+                    $$.n = ast_create_array($1.n, NULL);  // incomplete
                  }
                  | direct_declarator '[' NUMBER ']' {
-                    $$.n = ast_create_array(ast_create_num($3));
+                    $$.n = ast_create_array($1.n, ast_create_num($3));
                  }
                  | direct_declarator '(' ')'    {
                     $$.n = ast_create_func($1.n, NULL);
@@ -582,9 +559,12 @@ type_name:
          ;
 
 abstract_declarator:
-                   pointer
-                   | pointer direct_abstract_declarator
-                   | direct_abstract_declarator
+                   pointer  { $$ = $1; }
+                   | pointer direct_abstract_declarator {
+                    $1.n->ptr.to = $2.n;
+                    $$ = $1;
+                   }
+                   | direct_abstract_declarator { $$ = $1; }
                    ;
 
 direct_abstract_declarator:
@@ -597,8 +577,8 @@ direct_abstract_declarator:
                             $$.n = ast_create_array($2.n);
                           }
                           | direct_abstract_declarator '[' assignment_expression ']'
-                          | '[' '*' ']'
-                          | direct_abstract_declarator '[' '*' ']'
+                          /*| '[' '*' ']'*/
+                          /*| direct_abstract_declarator '[' '*' ']'*/
                           | '(' ')'
                           | direct_abstract_declarator '(' ')'
                           ;
@@ -606,70 +586,46 @@ direct_abstract_declarator:
     /* skipped 6.7.8 initialization */
 
 statement:
-         labeled_statement
-         | compound_statement
-         | expression_statement
-         /*| selection_statement*/
-         /*| iteration_statement*/
-         | jump_statement
+         compound_statement { $$ = $1; }
+         | expression_statement { $$ = $1; }
          ;
 
-labeled_statement:
-                 IDENT ':' statement
-                 /*CASE constant_expression ':' statement*/
-                 /*DEFAULT ':' statement*/
-                 ;
-
-compound_statement:
-                  '{' '}'
-                  |'{' block_item_list '}'
-                  ;
-
-block_item_list:
-               block_item
-               | block_item_list block_item
-               ;
-
-block_item:
-          declaration
-          | statement
-          ;
-
 expression_statement:
-                    expression ';'
-                    | ';'
+                    ';' { $$ = $1; } 
+                    | expression ';' { $$ = $1; }
                     ;
 
-jump_statement:
-              GOTO IDENT ';'
-              | CONTINUE ';'
-              | BREAK ';'
-              | RETURN ';'
-              | RETURN expression ';'
-              ;
+compound_statement:
+                  '{' '}'   {
+                    $$.n = ast_create_ident(NULL);
+                  }
 
 function_definition:
-                   declaration_specifiers declarator compound_statement
-                   | declaration_specifiers declarator declarator_list compound_statement
+                   declaration_specifiers declarator compound_statement {
+                    $$.n = ast_create_fcn($2.n, $1.n, $3.n); 
+                   }
+                   /*| declaration_specifiers declarator declarator_list compound_statement */
                    ;
 
 declaration_list:
-                declaration
-                | declaration_list declaration
+                declaration { $$.n = ast_list_start($1.n); }
+                | declaration_list declaration  {
+                    $$.n = ast_list_insert($1.n, $2.n);
+                }
                 ;
 
 external_declaration:
-                    function_definition
-                    | declaration
+                    function_definition { $$ = $1; }
+                    | declaration   { $$ = $1; }
                     ;
 
 
 start:
      external_declaration start {
-        
+        STDERR("REACHED START");  
      }
      | external_declaration {
-        
+       STDERR(" AMONG US "); 
      }
      ;
 

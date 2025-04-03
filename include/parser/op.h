@@ -76,7 +76,7 @@ enum tokens {
     FUNCTION,
     LIST,
     POINTER,
-    DECL,
+    DECLARATION,
     SCALAR,
     ARRAY
 };

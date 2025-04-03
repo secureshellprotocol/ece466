@@ -16,7 +16,6 @@ typedef struct ast_node_t ast_node;
 //  operator. 
 struct ast_node_unaop_t {
     enum tokens token;
-
     ast_node *expression;
 };
 
@@ -67,30 +66,25 @@ struct ast_node_scalar_t {
     uint32_t typetags;
 };
 
-//struct type_array {
-//    unsigned int size;
-//};
-//
-//struct ast_node_type_t {
-//    enum tokens t;
-//    union {
-//        struct type_array a;
-//    };
-//};
-
+struct ast_node_array_t {
+    ast_node *to;
+    ast_node *size;
+};
 
 struct ast_node_func_t {
     ast_node *label;
-
-    uint32_t stgclass;
-    uint32_t typequals;
-    uint32_t typetags;
+    ast_node *declspecs;
+    ast_node *params_list;
 };
 
-//struct ast_node_ptr_t {
-//    ast_node *to;
-//    uint32_t typequals;
-//};
+struct ast_node_decl_t {
+    ast_node *decl_specs;
+    ast_node *decl_list;
+};
+
+struct ast_node_ptr_t {
+    ast_node *to;
+};
 
 struct ast_node_sue_t {
     ast_node *name; // NULL => anon
@@ -110,40 +104,38 @@ typedef struct ast_node_t {
         struct ast_node_binop_t binop;
         struct ast_node_ternop_t ternop;
     
-        struct ast_list_t list;
-        
-
-        // decls
+        // types
         struct ast_node_scalar_t sc;
         struct ast_node_func_t func;
-        struct ast_node_type_t type;
+        struct ast_node_decl_t decl;
+        struct ast_node_array_t array;
+        
+        // list of nodes
+        struct ast_list_t list;
     };
 } ast_node;
 
 /* FUNCTIONS */
 
+// ast.c
+
 ast_node *create_node(enum tokens ot);
-void free_node(ast_node *n);
 
 ast_node *ast_create_ident(struct yy_struct);
 ast_node *ast_create_num(struct yy_struct);
 ast_node *ast_create_string(struct yy_struct);
 ast_node *ast_create_charlit(struct yy_struct);
-ast_node *ast_create_constant(
-        unsigned long long int ulld);
+ast_node *ast_create_constant(unsigned long long int ulld);
 
-// ast.c
+ast_node *ast_create_unaop(enum tokens token, ast_node *e);
+ast_node *ast_create_binop(enum tokens token, ast_node *l, ast_node *r);
+ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
 
-ast_node *ast_create_unaop(enum tokens token,
-        ast_node *e);
-ast_node *ast_create_binop(enum tokens token, 
-        ast_node *l, ast_node *r);
-ast_node *ast_create_ternop(
-        ast_node *l, ast_node *m, ast_node *r);
-ast_node *ast_create_func(
-        ast_node *label, ast_node *arg_list);
-ast_node *ast_create_list(
-        ast_node *expr);
+ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list);
+ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list);
+ast_node *ast_create_array(ast_node *to, ast_node *size);
+
+void free_node(ast_node *n);
 
 // ast_list.c
 
@@ -151,5 +143,7 @@ ast_node *ast_list_start(ast_node *start);
 ast_node *ast_list_insert(ast_node *list_node, ast_node *value);
 
 // astprint.c
+
 void astprint(ast_node *n);
+
 #endif

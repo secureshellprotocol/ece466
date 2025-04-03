@@ -52,8 +52,6 @@ typedef struct statementattr_t {
     char *tag;
 } statementattr;
 
-// typedef omitted
-
 typedef struct attr_list_t{
     union {
         varattr v;

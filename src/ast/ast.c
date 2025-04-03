@@ -25,7 +25,7 @@ ast_node *ast_create_ident(struct yy_struct ys)
 ast_node *ast_create_num(struct yy_struct ys)
 {
     ast_node *n = create_node(NUMBER);
-    switch(IS_FLOATING(ys.tags))
+    switch(IS_FLOAT(ys.tags))
     {
     case 0: /* integer */
         n->num.ival = ys.ulld;
@@ -62,18 +62,16 @@ ast_node *ast_create_charlit(struct yy_struct ys)
     return n;
 }
 
-ast_node *ast_create_unaop(int token,
-        ast_node *e)
+ast_node *ast_create_unaop(enum tokens token, ast_node *e)
 {
     ast_node *n = create_node(UNAOP);
     n->unaop.token = token;
-
     n->unaop.expression = e;
+    
     return n;
 }
 
-ast_node *ast_create_binop(int token,
-        ast_node *l, ast_node *r)
+ast_node *ast_create_binop(enum tokens token, ast_node *l, ast_node *r)
 {
     ast_node *n = create_node(BINOP);
     n->binop.token = token;
@@ -94,19 +92,32 @@ ast_node *ast_create_ternop(
     return n;
 }
 
-ast_node *ast_create_func(
-        ast_node *label, ast_node *arg_list)
+ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list)
 {
     ast_node *n = create_node(FUNCTION);
     
     n->func.label = label;
-    n->func.args = arg_list;
+    n->func.declspecs = declspecs;
+    n->func.params_list = params_list;
     return n;
 }
 
-ast_node *ast_create_array( ast_node *n )
+ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
 {
-    
+    ast_node *n = create_node(DECLARATION);
+    n->decl.decl_specs = decl_specs;
+    n->decl.decl_list = decl_list;
+
+    return n;
+}
+
+ast_node *ast_create_array(ast_node *to, ast_node *size)
+{
+    ast_node *n = create_node(ARRAY);
+    n->array.to = to;
+    n->array.size = size;
+
+    return n;
 }
 
 // walks up node tree and deletes each node

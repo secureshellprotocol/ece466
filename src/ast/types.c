@@ -15,3 +15,4 @@ ast_node *ast_create_array(ast_node *s)
 
     return a;
 }
+
