@@ -58,7 +58,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
         switch(*numberlit)
         {
             case 'U': case 'u':
-                if(IS_UNSIGNED(tags))
+                if(LEX_IS_UNSIGNED(tags))
                 {
                     goto error;
                 }
@@ -66,10 +66,10 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                 TAG_SET(tags, U_BIT);
                 break;
             case 'L': case 'l':
-                switch(IS_FLOATING(tags))
+                switch(LEX_IS_FLOATING(tags))
                 {
                 case 0:    // integer
-                    if(IS_LLONG(tags))
+                    if(LEX_IS_LLONG(tags))
                     {
                         goto error;
                     }
@@ -84,7 +84,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                     }
                     break;
                 default:    // real
-                    if(!IS_DOUBLE(tags) || IS_LONG(tags))
+                    if(!LEX_IS_DOUBLE(tags) || LEX_IS_LONG(tags))
                     {   // we cannot have a single-precision long float
                         goto error;
                     }
@@ -94,7 +94,7 @@ unsigned int tagparse(char* yytext, unsigned int yytags)
                 }
                 break;
             case 'F': case 'f':
-                if( !IS_DOUBLE(tags) || IS_LONG(tags))
+                if( !LEX_IS_DOUBLE(tags) || LEX_IS_LONG(tags))
                 {
                     goto error;
                 }

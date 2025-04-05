@@ -4,7 +4,10 @@ YACC=bison
 YFLAGS=-t --language=C
 CFLAGS=-g -Wall -pedantic -Iinclude/
 
-all: objtrigger obj/grammar.o obj/ast.o obj/lex.yy.o obj/lex_utils.o obj/ast_list.o obj/astprint.o obj/types.o
+all: objtrigger \
+	obj/grammar.o \
+	obj/lex.yy.o obj/lex_utils.o \
+	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o 
 	$(CC) $(CFLAGS) obj/*.o 
 
 .PHONY: objtrigger
@@ -22,18 +25,6 @@ obj/grammar.o: src/parser/grammar.y
 		-Wcex \
 		src/parser/grammar.y
 	$(CC) $(CFLAGS) -c src/parser/grammar.tab.c -o obj/grammar.o
-	
-obj/ast.o: src/ast/ast.c
-	$(CC) $(CFLAGS) -c src/ast/ast.c -o obj/ast.o
-
-obj/types.o: src/ast/ast.c
-	$(CC) $(CFLAGS) -c src/ast/types.c -o obj/ast.o
-
-obj/ast_list.o: src/ast/ast_list.c
-	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o
-
-obj/astprint.o: src/ast/astprint.c
-	$(CC) $(CFLAGS) -c src/ast/astprint.c -o obj/astprint.o
 
 obj/lex.yy.o: src/lexer/lexer.lex
 	$(LEX) -o src/lexer/lex.yy.c src/lexer/lexer.lex
@@ -42,10 +33,17 @@ obj/lex.yy.o: src/lexer/lexer.lex
 obj/lex_utils.o: src/lexer/lex_utils.c
 	$(CC) $(CFLAGS) -c src/lexer/lex_utils.c -o obj/lex_utils.o
 
-# == vectors
+obj/ast.o: src/ast/ast.c
+	$(CC) $(CFLAGS) -c src/ast/ast.c -o obj/ast.o
 
-obj/vector.o: src/symtab/vector.c
-	$(CC) $(CFLAGS) -c src/symtab/vector.c -o obj/vector.o
+obj/types.o: src/ast/types.c
+	$(CC) $(CFLAGS) -c src/ast/types.c -o obj/types.o
+
+obj/ast_list.o: src/ast/ast_list.c
+	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o
+
+obj/astprint.o: src/ast/astprint.c
+	$(CC) $(CFLAGS) -c src/ast/astprint.c -o obj/astprint.o
 
 # === test programs ===
 lex_standalone_obj:	objtrigger obj/grammar.o # builds w/ a debug header to inject a new main

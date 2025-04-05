@@ -73,7 +73,7 @@ struct ast_node_array_t {
 
 struct ast_node_func_t {
     ast_node *label;
-    ast_node *declspecs;
+    ast_node *decl_specs;
     ast_node *params_list;
 };
 
@@ -109,7 +109,8 @@ typedef struct ast_node_t {
         struct ast_node_func_t func;
         struct ast_node_decl_t decl;
         struct ast_node_array_t array;
-        
+        struct ast_node_ptr_t ptr;
+
         // list of nodes
         struct ast_list_t list;
     };

@@ -92,12 +92,12 @@ ast_node *ast_create_ternop(
     return n;
 }
 
-ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list)
+ast_node *ast_create_func(ast_node *label, ast_node *decl_specs, ast_node *params_list)
 {
     ast_node *n = create_node(FUNCTION);
     
     n->func.label = label;
-    n->func.declspecs = declspecs;
+    n->func.decl_specs = decl_specs;
     n->func.params_list = params_list;
     return n;
 }
@@ -107,15 +107,6 @@ ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
     ast_node *n = create_node(DECLARATION);
     n->decl.decl_specs = decl_specs;
     n->decl.decl_list = decl_list;
-
-    return n;
-}
-
-ast_node *ast_create_array(ast_node *to, ast_node *size)
-{
-    ast_node *n = create_node(ARRAY);
-    n->array.to = to;
-    n->array.size = size;
 
     return n;
 }
