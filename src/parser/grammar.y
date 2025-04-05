@@ -166,13 +166,13 @@ postfix_expression:
                   | postfix_expression MINUSMINUS   {
                     $$.n = ast_create_unaop(MINUSMINUS, $1.n);
                   }
-                  /*| '(' type_name ')' '{' initializer_list '}' {
+/*                  | '(' type_name ')' '{' initializer_list '}' {
                     $$.n = ast_create_func(NULL, $2.n, $5.n);
                   }
                   | '(' type_name ')' '{' initializer_list ',' '}'  {
                     $$.n = ast_create_func(NULL, $2.n, $5.n);
-                  }*/
-                  ;
+                  }
+*/                  ;
 
 argument_expression_list:
                         assignment_expression   {
@@ -199,9 +199,9 @@ unary_expression:
                 | SIZEOF unary_expression   { 
                     $$.n = ast_create_unaop(SIZEOF, $2.n);
                 }
-                | SIZEOF '(' type_name ')'  {
+                /*| SIZEOF '(' type_name ')'  {
                     $$.n = ast_create_unaop(SIZEOF, $3.n);
-                }
+                }*/
                 ;
 
 unary_operator:
@@ -215,9 +215,9 @@ unary_operator:
 
 cast_expression:
                unary_expression { $$ = $1; }
-               | '(' type_name ')' cast_expression  {
+               /*| '(' type_name ')' cast_expression  {
                 $$.n = ast_create_binop(TYPECAST, $2.n, $4.n);
-               }
+               }*/
                ;
 
 multiplicative_expression:
@@ -356,11 +356,11 @@ expression:
             $$.n = ast_list_insert($1.n, $3.n);
           }
           ;
-
+/*
 constant_expression:
                    conditional_expression { $$ = $1; }
                    ;
-
+*/
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_create_decl($1.n, $2.n); 
@@ -402,9 +402,9 @@ declaration_specifiers:
 */
 initialized_declarator_list:
                            initialized_declarator   { $$ = $1; }
-                           | initialized_declarator_list ',' initialized_declarator   {
+                           /*| initialized_declarator_list ',' initialized_declarator   {
                             $$.n = ast_create_binop(',', $1.n, $3.n);
-                           }
+                           }*/
                            ;
 
 initialized_declarator:
@@ -482,21 +482,21 @@ type_qualifier:
               }
               ;
     
-
+/*
 specifier_qualifier_list:
                          type_specifier {
                             $$.n = ast_list_start($1.n);
                          }
-                         | specifier_qualifier_list type_specifier {
-                            $$.n = ast_list_insert($1.n, $2.n);
+                         | type_specifier specifier_qualifier_list {
+                            $$.n = ast_list_insert($2.n, $1.n);
                          }
-                         | type_qualifier  {   /* sus */
+                         | type_qualifier  {
                             $$.n = ast_list_start($1.n);
                          }
-                         | type_qualifier_list type_qualifier {
-                            $$.n = ast_list_insert($1.n, $2.n);
+                         | type_qualifier specifier_qualifier_list {
+                            $$.n = ast_list_insert($2.n, $1.n);
                          }
-                         ;
+                         ;*/
 
 /*struct_declarator_list:
                       struct_declarator {
@@ -519,10 +519,10 @@ declarator:
           direct_declarator {
             $$ = $1;
           }
-          | pointer direct_declarator   {
+          /*| pointer direct_declarator   {
             $1.n->binop.right = $2.n;
             $$ = $1;
-          }
+          }*/
           ;
 
 direct_declarator:
@@ -541,11 +541,12 @@ direct_declarator:
                  }
                  ;
 
-pointer:    /* refactor */
+/*
+pointer: 
        '*'  {
         $$.n = ast_create_binop(POINTER, NULL, NULL);
        }
-       | '*' type_qualifier_list    {
+        | '*' type_qualifier_list    {
         $$.n = ast_create_binop(POINTER, $2.n, NULL);
        }
        | '*' pointer    {
@@ -555,7 +556,8 @@ pointer:    /* refactor */
         $$.n = ast_create_binop(POINTER, $2.n, $3.n);
        }
        ;
-
+*/
+/*
 type_qualifier_list:
                    type_qualifier   {
                     $$.n = ast_list_start($1.n);
@@ -563,7 +565,7 @@ type_qualifier_list:
                    | type_qualifier_list type_qualifier {
                     $$.n = ast_list_insert($1.n, $2.n);
                    }
-                   ;
+                   ;*/
 
 /*identifier_list:
                IDENT    {
@@ -573,7 +575,7 @@ type_qualifier_list:
                 $$.n = ast_list_insert($1.n, $3.n);
                }
                ;*/
-
+/*
 type_name:
          specifier_qualifier_list  {
             $$.n = ast_list_start($1.n);
@@ -582,7 +584,13 @@ type_name:
             $$.n = ast_list_insert($1.n, $2.n);
          }
          ;
-
+*/
+/*
+abstract_declarator:
+                   direct_abstract_declarator   { $$ = $1; }
+                   ;
+*/
+/*
 abstract_declarator:
                    pointer  { $$ = $1; }
                    | pointer direct_abstract_declarator {
@@ -591,6 +599,7 @@ abstract_declarator:
                    }
                    | direct_abstract_declarator { $$ = $1; }
                    ;
+
 
 direct_abstract_declarator:
                           '(' abstract_declarator ')'
@@ -603,13 +612,11 @@ direct_abstract_declarator:
                             $$.n = ast_create_array($2.n);
                           }
                           | direct_abstract_declarator '[' NUMBER ']'
-                          /*| '[' '*' ']'
-                          | direct_abstract_declarator '[' '*' ']'*/
                           | '(' ')'
                           | direct_abstract_declarator '(' ')'
                           ;
-
-
+*/
+/*
 initializer:
            assignment_expression
            | '{' initializer_list '}'
@@ -636,7 +643,7 @@ designator:
           '[' constant_expression ']'
           | '.' IDENT
           ;
-
+*/
 /*
 statement:
          compound_statement { $$ = $1; }
@@ -648,6 +655,7 @@ expression_statement:
                     | expression ';' { $$ = $1; }
                     ;
 */
+/*
 compound_statement:
                   '{' '}'   {
                     $$.n = ast_create_ident(NULL);
@@ -657,9 +665,9 @@ function_definition:
                    declaration_specifiers declarator compound_statement {
                     $$.n = ast_create_fcn($2.n, $1.n, $3.n); 
                    }
-                   /*| declaration_specifiers declarator declarator_list compound_statement */
+                   /*| declaration_specifiers declarator declarator_list compound_statement
                    ;
-
+*/
 /*declaration_list:
                 declaration { $$.n = ast_list_start($1.n); }
                 | declaration_list declaration  {
@@ -668,17 +676,21 @@ function_definition:
                 ;
 */
 external_declaration:
-                    function_definition { $$ = $1; }
-                    | declaration   { $$ = $1; }
+                    /*function_definition { $$ = $1; }
+                    | */
+                    declaration   { $$ = $1; }
                     ;
 
 
 start:
      external_declaration start {
-        STDERR("REACHED START");  
+        if($1.n != NULL) astprint($1.n);
      }
-     | external_declaration {
-       STDERR(" AMONG US "); 
+     | external_declaration { 
+        if($1.n != NULL) astprint($1.n);
+     }
+     | expression ';' {
+        if($1.n != NULL) astprint($1.n);
      }
      ;
 
