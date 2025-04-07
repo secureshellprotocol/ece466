@@ -18,16 +18,15 @@
 #include <lexer/lex_utils.h>
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
+#include <symtab/symtab.h>
 
 // ease compiler complaints
 int yylex();
 void yyerror(const char *s);
 
 // file scope
-//symbol_scope file;
-//file = symtab_create(NULL);
-
-//symbol_scope *current = &file;
+symbol_scope *file;
+symbol_scope *current;
 
 extern FILE *yyin;
 %}
@@ -363,7 +362,7 @@ constant_expression:
 */
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            $$.n = ast_create_decl($1.n, $2.n); 
+            $$.n = ast_list_merge($1.n, $2.n);
            }
            ;
 
@@ -380,7 +379,7 @@ declaration_specifiers:
                       | type_specifier declaration_specifiers {
                         $$.n = ast_list_insert($2.n, $1.n);
                       }
-                      | type_qualifier{
+                      | type_qualifier  {
                         $$.n = ast_list_start($1.n);
                       }
                       | type_qualifier declaration_specifiers   {
@@ -393,8 +392,8 @@ initialized_declarator_list:
                            ;
 
 initialized_declarator:
-                     declarator { $$ = $1; } 
-                     ;
+                      declarator { $$ = $1; } 
+                      ;
 
 
 storage_class_specifier:
@@ -463,27 +462,58 @@ type_qualifier:
               }
               ;
     
+type_qualifier_list:
+                   type_qualifier   {
+                    $$.n = ast_list_start($1.n);
+                   }
+                   | type_qualifier_list type_qualifier   {
+                    $$.n = ast_list_insert($1.n, $2.n);
+                   }
+                   ;
+
 declarator:
           direct_declarator {
             $$ = $1;
+          }
+          | pointer direct_declarator {
+            $$.n = ast_list_merge($1.n, $2.n);
           }
           ;
 
 direct_declarator:
                  IDENT  {
-                    $$.n = ast_create_ident($1);
+                    $$.n = ast_list_start(ast_create_ident($1));
                  }
                  | '(' declarator ')'   { $$ = $2; }
                  | direct_declarator '[' ']'    { 
-                    $$.n = ast_create_array($1.n, NULL);  // incomplete
+                    $$.n = ast_list_insert($1.n, ast_create_array(NULL, NULL));
                  }
                  | direct_declarator '[' NUMBER ']' {
-                    $$.n = ast_create_array($1.n, ast_create_num($3));
+                    $$.n = ast_list_insert($1.n, 
+                        ast_create_array(NULL, ast_create_num($3))
+                    );
                  }
                  | direct_declarator '(' ')'    {
                     $$.n = ast_create_func($1.n, NULL, NULL);
                  }
                  ;
+
+pointer:
+       '*' { 
+        $$.n = ast_list_start(ast_create_ptr(NULL, NULL));
+       }
+       | '*' type_qualifier_list  {
+        $$.n = ast_list_merge(ast_create_ptr(NULL, NULL), $2.n);
+       }
+       | '*' pointer {
+        $$.n = ast_list_merge(ast_create_ptr(NULL, NULL), $2.n);
+       }
+       | '*' type_qualifier_list pointer  {
+        $$.n = ast_list_merge(
+            ast_list_merge($2.n, $3.n), ast_create_ptr(NULL, NULL)
+        ); 
+       }
+       ;
 
 external_declaration:
                     declaration   { $$ = $1; }
@@ -491,10 +521,8 @@ external_declaration:
 
 start:
      external_declaration start {
-        if($1.n != NULL) astprint($1.n);
      }
      | external_declaration { 
-        if($1.n != NULL) astprint($1.n);
      }
      | expression ';' start {
         if($1.n != NULL) astprint($1.n);
@@ -508,11 +536,13 @@ start:
 
 int main(int argc, char* argv[])
 {
+    file = symtab_create(NULL);
+    current = file;
     if(argc>1)
     {
         yyin = fopen(argv[1], "r");
     }
-    yydebug=1;
+    yydebug=0;
 
     yyparse();
 }

@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+
+#include <james_utils.h>
 #include <ast/ast.h>
 #include <parser/op.h>
 
@@ -18,10 +20,34 @@ ast_node *ast_list_insert(ast_node *list_node, ast_node *value)
 {
     ast_node *next = create_node(LIST);
     next->list.value = value;
-   
+
+    // makes our value node into the head
     next->list.prev = list_node->list.prev;
     next->list.next = list_node;
     list_node->list.prev = next;
 
-    return next;
+    return next;    // returns new head
+}
+
+// merge all items from donor list into list_node
+ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor)
+{
+    STDERR("MERGING:");
+    astprint(list_node);
+    STDERR("\tAND");
+    astprint(list_donor);
+    STDERR("\tRES");
+    // makes our value node into the head
+
+    ast_node *iter = list_node;
+    while(iter->list.next != NULL)
+        iter = iter->list.next;
+
+    iter->list.next = list_donor;
+    list_donor->list.prev = iter;
+    
+    astprint(list_node);
+    STDERR("DONE")
+
+    return list_node;    // returns new head
 }

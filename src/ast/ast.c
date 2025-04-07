@@ -102,41 +102,11 @@ ast_node *ast_create_func(ast_node *label, ast_node *decl_specs, ast_node *param
     return n;
 }
 
-ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
+ast_node *ast_create_decl(ast_node *start)
 {
     ast_node *n = create_node(DECLARATION);
-    n->decl.decl_specs = decl_specs;
-    n->decl.decl_list = decl_list;
-
+    n->decl.start = start;
+    n->decl.end = start;
     return n;
-}
-
-// walks up node tree and deletes each node
-// NO PROTECTION -- ADD A REFERENCE COUNT QUESTION MARK????
-// Hak -- i know this isnt required, but i wanted to try anyways
-void free_node(ast_node *n)
-{
-    if(n == NULL) { return; }
-
-    switch(n->op_type)
-    {
-    case UNAOP:
-        free_node(n->unaop.expression);
-        break;
-    case BINOP:
-        free_node(n->binop.left);
-        free_node(n->binop.right);
-        break;
-    case TERNOP:
-        free_node(n->ternop.left);
-        free_node(n->ternop.middle);
-        free_node(n->ternop.right);
-        break;
-    default:
-        break;
-    }
-
-    free(n);
-    return;
 }
 

@@ -2,7 +2,6 @@
 #define __SYMTAB_H_JR
 
 #include <ast/ast.h>
-#include <symtab/attr_list.h>
 
 /* Symbol table is just a null-terminated linked-list of elements.
  * to create a symtab, you create it's scope, and it contains 3 lists, each 
@@ -51,7 +50,11 @@ symtab_elem *symtab_lookup(symbol_scope *, char *name, int ns);
 // appends a symbol into a namespace. can provide optional attribute list
 // returns -1 on failure
 // returns 0 on success
-int symtab_enter(symbol_scope *, char *name, int ns, attr_list *l,
+int symtab_enter(symbol_scope *, char *name, int ns, ast_node *d,
         char *file_origin, unsigned int line_no_origin);
+
+void symtab_install(symbol_scope *scope, ast_node *n);
+
+void symtab_install_decl(symbol_scope *scope, ast_node *d);
 
 #endif

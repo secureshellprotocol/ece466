@@ -78,12 +78,13 @@ struct ast_node_func_t {
 };
 
 struct ast_node_decl_t {
-    ast_node *decl_specs;
-    ast_node *decl_list;
+    ast_node *start;
+    ast_node *end;
 };
 
 struct ast_node_ptr_t {
     ast_node *to;
+    ast_node *type_quals;
 };
 
 struct ast_node_sue_t {
@@ -133,8 +134,9 @@ ast_node *ast_create_binop(int token, ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
 
 ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list);
-ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list);
+ast_node *ast_create_decl(ast_node *start);
 ast_node *ast_create_array(ast_node *to, ast_node *size);
+ast_node *ast_create_ptr(ast_node *to, ast_node *type_quals);
 
 void free_node(ast_node *n);
 
@@ -142,6 +144,7 @@ void free_node(ast_node *n);
 
 ast_node *ast_list_start(ast_node *start);
 ast_node *ast_list_insert(ast_node *list_node, ast_node *value);
+ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor);
 
 // astprint.c
 

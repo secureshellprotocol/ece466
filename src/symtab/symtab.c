@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include <james_utils.h>
+#include <parser/grammar.tab.h>
+#include <parser/op.h>
 #include <symtab/attr_list.h>
 #include <symtab/symtab.h>
 
@@ -31,7 +33,7 @@ void symtab_destroy(symbol_scope *s)
     for(int i = 0; i < NUM_ELEMS(scope_list); i++)
     {
         symtab_elem *current = scope_list[i];
-        while(*current != NULL)
+        while(current != NULL)
         {
             symtab_elem *t = current;
             current = t->next;
@@ -75,7 +77,7 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
     return NULL;    // no match found.
 }
 
-int symtab_enter(symbol_scope *scope, char *name, int ns, attr_list *l, 
+int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs, 
         char *file_origin, unsigned int line_no_origin)
 {
     // generate elem
@@ -110,3 +112,30 @@ int symtab_enter(symbol_scope *scope, char *name, int ns, attr_list *l,
     
     return 0;
 }
+
+//void symtab_install(symbol_scope *scope, ast_node *n)
+//{
+//    switch(n->op_type)  
+//    {
+//        case DECLARATION:
+//            symtab_install_decl(scope, n);
+//            break;
+//        default:
+//            STDERR_F("Failed to install op %d", n->op_type)
+//            break;
+//    }
+//}
+
+//void symtab_install_decl(symbol_scope *scope, ast_node *d)
+//{
+//    while(d->decl.decl_list != NULL && (d->decl.decl_list->list.next != NULL || d->decl.decl_list->list.value->op_type != IDENT ))
+//    {
+//        ast_list_insert(d->decl.decl_specs, d->decl.decl_list->list.value);
+//         
+//
+//        d->decl.decl_list = d->decl.decl_list->list.next;
+//    }
+//
+//    astprint(d);
+//    return;
+//}

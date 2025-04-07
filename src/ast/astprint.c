@@ -10,7 +10,7 @@
 //  inserts a number of spaces equal to the depth of the tree.
 //  think of justifying your indents during grade school -- good times!
 #define JUSTIFY \
-    printf("%*c", depth+1, ' ');
+    printf("%*c", depth+1, ' ')
 
 // selecting some root node, start to print
 void astprint(ast_node *n)
@@ -18,7 +18,8 @@ void astprint(ast_node *n)
     static int depth;
     ++depth;
 
-    JUSTIFY
+    JUSTIFY;
+    
     switch(n->op_type)
     {
     case IDENT:
@@ -79,20 +80,31 @@ void astprint(ast_node *n)
         printf("ARRAY");
         if(n->array.to != NULL)
         {
-            printf(" OF TYPE:");
             astprint(n->array.to);
-            printf(" AND SIZE: ");
-            astprint(n->array.size);
+            JUSTIFY;
+            printf(" SIZE: ");
+            if(n->array.size != NULL)
+                astprint(n->array.size);
+            else
+                printf("INCOMPLETE");
         }
         else 
         {
-            printf(" INCOMPLETE");
+            printf(" INCOMPLETE\n");
         }
         break;
     case POINTER:
-        printf("POINTER");
+        printf("POINTER\n");
+        if(n->ptr.type_quals != NULL) 
+        {
+            JUSTIFY;
+            printf(" of SPECS\n");
+            astprint(n->ptr.type_quals);
+        }
         if(n->ptr.to != NULL)
         {
+            JUSTIFY;
+            printf("TO\n");
             astprint(n->ptr.to);
         }
         break;
@@ -101,27 +113,32 @@ void astprint(ast_node *n)
         astprint(n->func.label);
         if(n->func.decl_specs != NULL)
         {
+            JUSTIFY;
             printf("WITH DECLARATION SPECIFIERS \n");
             astprint(n->func.decl_specs);
         }
         if(n->func.params_list != NULL)
         {
+            JUSTIFY;
             printf("WITH PARAMETERS \n");
             astprint(n->func.params_list);
         }
         break;
-    case DECLARATION:
-        printf("DECLARATION");
-        if(n->decl.decl_specs != NULL)
-        {
-            printf(" of SPECS:\n");
-            astprint(n->decl.decl_specs);
-        }
-        if(n->decl.decl_list != NULL)
-        {
-            printf("declaring the following IDENTS:\n");
-            astprint(n->decl.decl_list);
-        }
+//    case DECLARATION:
+//        printf("DECLARATION\n");
+//        if(n->decl.decl_specs != NULL)
+//        {
+//            JUSTIFY;
+//            printf(" of SPECS:\n");
+//            astprint(n->decl.decl_specs);
+//        }
+//        if(n->decl.decl_list != NULL)
+//        {
+//            JUSTIFY;
+//            printf(" of declarators:\n");
+//            astprint(n->decl.decl_list);
+//        }
+//        break;
     case LIST:
         printf("LIST ITEM");
         astprint(n->list.value);

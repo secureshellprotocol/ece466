@@ -4,10 +4,12 @@ YACC=bison
 YFLAGS=-t --language=C
 CFLAGS=-g -Wall -pedantic -Iinclude/
 
-all: objtrigger \
+all: \
+	objtrigger \
 	obj/grammar.o \
 	obj/lex.yy.o obj/lex_utils.o \
-	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o 
+	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o \
+	obj/symtab.o 
 	$(CC) $(CFLAGS) obj/*.o 
 
 .PHONY: objtrigger
@@ -44,6 +46,9 @@ obj/ast_list.o: src/ast/ast_list.c
 
 obj/astprint.o: src/ast/astprint.c
 	$(CC) $(CFLAGS) -c src/ast/astprint.c -o obj/astprint.o
+
+obj/symtab.o: src/symtab/symtab.c
+	$(CC) $(CFLAGS) -c src/symtab/symtab.c -o obj/symtab.o
 
 # === test programs ===
 lex_standalone_obj:	objtrigger obj/grammar.o # builds w/ a debug header to inject a new main

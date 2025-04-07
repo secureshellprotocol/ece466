@@ -13,6 +13,7 @@ enum tokens {
     POINTER,
     DECLARATION,
     SCALAR,
-    ARRAY
+    ARRAY,
+    VARIABLE
 };
 #endif
