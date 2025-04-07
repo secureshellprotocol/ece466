@@ -78,20 +78,12 @@ void astprint(ast_node *n)
         break;
     case ARRAY:
         printf("ARRAY");
-        if(n->array.to != NULL)
-        {
-            astprint(n->array.to);
-            JUSTIFY;
-            printf(" SIZE: ");
-            if(n->array.size != NULL)
-                astprint(n->array.size);
-            else
-                printf("INCOMPLETE");
-        }
-        else 
-        {
-            printf(" INCOMPLETE\n");
-        }
+        JUSTIFY;
+        printf(" SIZE: ");
+        if(n->array.size != NULL)
+            astprint(n->array.size);
+        else
+            printf("INCOMPLETE\n");
         break;
     case POINTER:
         printf("POINTER\n");
@@ -137,7 +129,6 @@ void astprint(ast_node *n)
             depth++;
         }
         break;
-
     // constant keywords -- 100j 
     case AUTO:
         printf("AUTO\n");

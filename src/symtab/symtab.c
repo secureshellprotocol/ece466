@@ -3,11 +3,17 @@
 #include <string.h>
 
 #include <james_utils.h>
+#include <ast/ast.h>
+#include <ast/types.h>
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
 #include <symtab/symtab.h>
 
 #define NUM_ELEMS(x) (sizeof(x)/sizeof(x[0]))
+
+// src/lexer/lexer.lex
+extern int line_num;
+extern char yyin_name[4096];
 
 symbol_scope *symtab_create(symbol_scope *p)
 {
@@ -78,7 +84,7 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
 
 int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs, 
         char *file_origin, unsigned int line_no_origin)
-{
+{ 
     // generate elem
     symtab_elem *new = calloc(1, sizeof(symtab_elem));
 
@@ -86,6 +92,13 @@ int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs,
     new->line_no_origin = line_no_origin;
 
     new->name = strdup(name);
+
+    if(scope->previous == NULL)
+    {
+        decl_specs = ast_list_insert(
+                decl_specs, ast_create_type(EXTERN)
+            );
+    }
 
     switch(ns)
     {
@@ -108,33 +121,26 @@ int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs,
            STDERR_F("symtab: Failed to insert %s into namespace %d!", name, ns);
            return -1;
     }
-    
+
     return 0;
 }
 
 void symtab_install(symbol_scope *scope, ast_node *n)
 {
-    switch(n->op_type)  
+    n = ast_list_reverse(n);
+    astprint(n);
+    switch(n->list.value->op_type)  
     {
-        case DECLARATION:
-            symtab_install_decl(scope, n);
+        case IDENT: //scalar
+            symtab_enter(scope,
+                    n->list.value->ident.value,
+                    NS_IDENTS,
+                    n->list.next,
+                    yyin_name,
+                    line_num);
             break;
         default:
-            STDERR_F("Failed to install op %d", n->op_type)
+            STDERR_F("Failed to install op %d", n->list.value->op_type);
             break;
     }
-}
-
-void symtab_install_decl(symbol_scope *scope, ast_node *d)
-{
-    while(d->decl.decl_list != NULL && (d->decl.decl_list->list.next != NULL || d->decl.decl_list->list.value->op_type != IDENT ))
-    {
-        ast_list_insert(d->decl.decl_specs, d->decl.decl_list->list.value);
-         
-
-        d->decl.decl_list = d->decl.decl_list->list.next;
-    }
-
-    astprint(d);
-    return;
 }

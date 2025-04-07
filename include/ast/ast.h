@@ -145,6 +145,7 @@ void free_node(ast_node *n);
 ast_node *ast_list_start(ast_node *start);
 ast_node *ast_list_insert(ast_node *list_node, ast_node *value);
 ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor);
+ast_node *ast_list_reverse(ast_node *list_node);
 
 // astprint.c
 

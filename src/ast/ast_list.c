@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-
 #include <james_utils.h>
 #include <ast/ast.h>
 #include <parser/op.h>
@@ -50,4 +49,15 @@ ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor)
     STDERR("DONE")
 
     return list_node;    // returns new head
+}
+
+ast_node *ast_list_reverse(ast_node *list_node)
+{
+    ast_node *tmp = list_node->list.next;
+    list_node->list.next = list_node->list.prev;
+    list_node->list.prev = tmp;
+
+    if(list_node->list.prev == NULL)
+        return list_node;
+    return ast_list_reverse(list_node->list.prev);
 }
