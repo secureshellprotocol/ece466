@@ -5,7 +5,6 @@
 #include <james_utils.h>
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
-#include <symtab/attr_list.h>
 #include <symtab/symtab.h>
 
 #define NUM_ELEMS(x) (sizeof(x)/sizeof(x[0]))
