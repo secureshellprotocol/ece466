@@ -95,18 +95,6 @@ void astprint(ast_node *n)
         break;
     case POINTER:
         printf("POINTER\n");
-        if(n->ptr.type_quals != NULL) 
-        {
-            JUSTIFY;
-            printf(" of SPECS\n");
-            astprint(n->ptr.type_quals);
-        }
-        if(n->ptr.to != NULL)
-        {
-            JUSTIFY;
-            printf("TO\n");
-            astprint(n->ptr.to);
-        }
         break;
     case FUNCTION:
         printf("FUNCTION");

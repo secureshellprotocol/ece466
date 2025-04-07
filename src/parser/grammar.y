@@ -503,14 +503,18 @@ pointer:
         $$.n = ast_list_start(ast_create_ptr(NULL, NULL));
        }
        | '*' type_qualifier_list  {
-        $$.n = ast_list_merge(ast_create_ptr(NULL, NULL), $2.n);
+        $$.n = ast_list_merge($2.n, 
+            ast_list_start(ast_create_ptr(NULL, NULL)));
        }
        | '*' pointer {
-        $$.n = ast_list_merge(ast_create_ptr(NULL, NULL), $2.n);
+        $$.n = ast_list_merge($2.n, 
+            ast_list_start(ast_create_ptr(NULL, NULL)));
        }
        | '*' type_qualifier_list pointer  {
         $$.n = ast_list_merge(
-            ast_list_merge($2.n, $3.n), ast_create_ptr(NULL, NULL)
+            ast_list_merge($2.n, $3.n), 
+                ast_list_start(ast_create_ptr(NULL, NULL)
+            )
         ); 
        }
        ;
