@@ -112,29 +112,29 @@ int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs,
     return 0;
 }
 
-//void symtab_install(symbol_scope *scope, ast_node *n)
-//{
-//    switch(n->op_type)  
-//    {
-//        case DECLARATION:
-//            symtab_install_decl(scope, n);
-//            break;
-//        default:
-//            STDERR_F("Failed to install op %d", n->op_type)
-//            break;
-//    }
-//}
+void symtab_install(symbol_scope *scope, ast_node *n)
+{
+    switch(n->op_type)  
+    {
+        case DECLARATION:
+            symtab_install_decl(scope, n);
+            break;
+        default:
+            STDERR_F("Failed to install op %d", n->op_type)
+            break;
+    }
+}
 
-//void symtab_install_decl(symbol_scope *scope, ast_node *d)
-//{
-//    while(d->decl.decl_list != NULL && (d->decl.decl_list->list.next != NULL || d->decl.decl_list->list.value->op_type != IDENT ))
-//    {
-//        ast_list_insert(d->decl.decl_specs, d->decl.decl_list->list.value);
-//         
-//
-//        d->decl.decl_list = d->decl.decl_list->list.next;
-//    }
-//
-//    astprint(d);
-//    return;
-//}
+void symtab_install_decl(symbol_scope *scope, ast_node *d)
+{
+    while(d->decl.decl_list != NULL && (d->decl.decl_list->list.next != NULL || d->decl.decl_list->list.value->op_type != IDENT ))
+    {
+        ast_list_insert(d->decl.decl_specs, d->decl.decl_list->list.value);
+         
+
+        d->decl.decl_list = d->decl.decl_list->list.next;
+    }
+
+    astprint(d);
+    return;
+}

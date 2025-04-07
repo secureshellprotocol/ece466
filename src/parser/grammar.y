@@ -363,6 +363,7 @@ constant_expression:
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_list_merge($1.n, $2.n);
+            
            }
            ;
 
