@@ -5,6 +5,8 @@ ast_node *ast_create_type(uint32_t type_token)
 {
     ast_node *n = create_node(type_token);
 
+
+
     return n;
 }
 

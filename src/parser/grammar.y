@@ -198,9 +198,9 @@ unary_expression:
                 | SIZEOF unary_expression   { 
                     $$.n = ast_create_unaop(SIZEOF, $2.n);
                 }
-                /*| SIZEOF '(' type_name ')'  {
+                | SIZEOF '(' type_name ')'  {
                     $$.n = ast_create_unaop(SIZEOF, $3.n);
-                }*/
+                }
                 ;
 
 unary_operator:
@@ -363,7 +363,6 @@ constant_expression:
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_list_merge($1.n, $2.n);
-            symtab_install(current, $$.n);
            }
            ;
 
@@ -446,10 +445,80 @@ type_specifier:
               | BOOL      {
                 $$.n = ast_create_type(CHAR);
               }
-              /*| struct_or_union_specifier */
+              | struct_or_union {
+                $$ = $1;
+              }
               ;
 
-    /* struct enum skipped */
+
+struct_or_union_specifier:
+                         struct_or_union '{' struct_declaration_list '}'    {
+                            symtab_install_list($1.n->sue.symtab, $3.n);
+                         }
+                         | struct_or_union IDENT '{' struct_declaration_list '}' {
+                            // install ident into $1
+                            // install list of decls to struct
+                         }
+                         | struct_or_union IDENT    {
+                            // keep symtab empty
+                            // install ident to $1
+                         }
+                         ;
+
+struct_or_union:
+               STRUCT   {
+                $$.n = ast_create_type(STRUCT);
+               }
+               | UNION  {
+                $$.n = ast_create_type(UNION);
+               }
+               ;
+
+struct_declaration_list: 
+                       struct_declaration   {
+                        $$.n = ast_list_start($1.n);
+                       }
+                       | struct_declaration_list struct_declaration {
+                        $$.n = ast_list_insert($1.n, $2.n);
+                       }
+                       ;
+
+struct_declaration:
+                  specifier_qualifier_list struct_declarator_list ';'   {
+                    $$.n = ast_list_merge($1.n, $2.n);
+                  }
+                  ;
+
+specifier_qualifier_list:
+                        type_specifier  {
+                            $$.n = ast_list_start($1.n);
+                        }
+                        | type_specifier specifier_qualifier_list   {
+                            $$.n = ast_list_insert($2.n, $1.n);
+                        }
+                        | type_qualifier    {
+                            $$.n = ast_list_start($1.n);
+                        }
+                        | type_qualifier specifier_qualifier_list   {
+                            $$.n = ast_list_insert($2.n, $1.n);
+                        }
+                        ;
+
+struct_declarator_list:
+                      struct_declarator {
+                        $$.n = ast_list_start($1.n)
+                      }
+                      | struct_declarator_list ',' struct_declarator    {
+                        $$.n = ast_list_insert($1.n, $3.n);
+                      }
+                      ;
+
+struct_declarator:
+                 declarator {
+                    $$ = $1;
+                 }
+                 /*skipped bitmasks*/
+                 ;
 
 type_qualifier:
               CONST {
@@ -494,10 +563,71 @@ direct_declarator:
                         ast_create_array(NULL, ast_create_num($3))
                     );
                  }
+                 | direct_declarator '(' ident_list ')' {
+                    $$.n = ast_create_func($1.n, NULL, $3.n);
+                 }
                  | direct_declarator '(' ')'    {
                     $$.n = ast_create_func($1.n, NULL, NULL);
                  }
                  ;
+
+type_name:
+         specifier_qualifier_list abstract_declarator  {
+           $$.n = ast_list_merge($1.n, $2.n); 
+         }
+         ;
+
+abstract_declarator:
+                   pointer  {
+                    $$ = $1;
+                   }
+                   | direct_abstract_declarator {
+                    $$ = $1;
+                   }
+                   | pointer direct_abstract_declarator {
+                    $$.n = ast_list_merge($1.n, $2.n);
+                   }
+                   ;
+
+direct_abstract_declarator:
+                          '(' abstract_declarator ')'   {
+                            $$ = $1;
+                          }
+                          | direct_abstract_array {
+                            $$.n = ast_list_start($1.n);
+                          }
+                          | direct_abstract_declarator direct_abstract_array {
+                            $$.n = ast_list_insert($1.n, $2.n)
+                          } 
+                          | '(' ')' {
+                            $$.n = ast_list_start(
+                                ast_create_func(NULL, NULL, NULL)
+                            ); 
+                          }
+                          | direct_abstract_declarator '(' ')'  {
+                            $$.n = ast_list_insert($1.n, 
+                                ast_create_func(NULL, NULL, NULL)
+                            );
+                          }
+                          ;
+
+direct_abstract_array:
+                     | '[' ']' {
+                        $$.n = ast_create_array(NULL, NULL);
+                     }
+                     | '[' NUMBER ']'  {
+                        $$.n = ast_create_array(NULL, ast_create_num($2));
+                     } 
+                     ;
+
+ident_list:
+          IDENT {
+            $$.n = ast_list_start(ast_create_ident($1));
+          }
+          | ident_list ',' IDENT    {
+            $$.n = ast_list_insert($1.n, ast_create_ident($3.n));
+          }
+          ;
 
 pointer:
        '*' { 
@@ -519,6 +649,36 @@ pointer:
         ); 
        }
        ;
+
+compound_statement:
+                  '{' '}'   {
+                    // thrown away
+                  }
+                  | '{' block_item_list '}' {
+                    
+                  }
+                  ;
+
+block_item_list:
+               block_item   {
+                $$.n = ast_list_start($1.n);
+               }
+               | block_item_list block_item {
+                $$.n = ast_list_insert($1.n, $3.n);
+               }
+               ;
+
+block_item:
+          declaration   {
+            $$ = $1;
+          }
+          /*statement {
+            $$ = $1;
+          }*/
+          ;
+
+
+
 
 external_declaration:
                     declaration   { $$ = $1; }
