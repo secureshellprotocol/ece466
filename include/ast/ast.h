@@ -5,6 +5,7 @@
 
 #include <lexer/lexer.lex.h>
 #include <parser/grammar.tab.h>
+#include <symtab/symtab.h>
 
 #define NUM_PROTOTYPES 10
 
@@ -88,8 +89,8 @@ struct ast_node_ptr_t {
 };
 
 struct ast_node_sue_t {
-    ast_node *name; // NULL => anon
-    ast_node *mbr_list; // NULL => incomplete 
+    ast_node *label;
+    symbol_scope *symtab;
 };
 
 typedef struct ast_node_t {
@@ -111,6 +112,7 @@ typedef struct ast_node_t {
         struct ast_node_decl_t decl;
         struct ast_node_array_t array;
         struct ast_node_ptr_t ptr;
+        struct ast_node_sue_t sue;
 
         // list of nodes
         struct ast_list_t list;

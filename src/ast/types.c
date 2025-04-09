@@ -1,11 +1,21 @@
+#include <stddef.h>
+
 #include <ast/ast.h>
 #include <ast/types.h>
+#include <symtab/symtab.h>
 
 ast_node *ast_create_type(uint32_t type_token)
 {
     ast_node *n = create_node(type_token);
 
-
+    switch(type_token)
+    {
+        case STRUCT: case UNION: case ENUM:
+            n->sue.symtab = symtab_create(NULL);
+            break;
+        default:
+            break;
+    }
 
     return n;
 }

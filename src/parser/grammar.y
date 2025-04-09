@@ -363,6 +363,7 @@ constant_expression:
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_list_merge($1.n, $2.n);
+            symtab_install(current, $$.n);
            }
            ;
 
@@ -394,7 +395,6 @@ initialized_declarator_list:
 initialized_declarator:
                       declarator { $$ = $1; } 
                       ;
-
 
 storage_class_specifier:
                        TYPEDEF  {
@@ -453,15 +453,18 @@ type_specifier:
 
 struct_or_union_specifier:
                          struct_or_union '{' struct_declaration_list '}'    {
-                            symtab_install_list($1.n->sue.symtab, $3.n);
+                            $1.n->sue.label = NULL;
+                            symtab_enter_list($1.n->sue.symtab, $3.n);
+                            $$ = $1;
                          }
                          | struct_or_union IDENT '{' struct_declaration_list '}' {
-                            // install ident into $1
-                            // install list of decls to struct
+                            $1.n->sue.label = ast_create_ident($2);
+                            symtab_enter_list($1.n->sue.symtab, $4.n);
+                            $$ = $1; 
                          }
-                         | struct_or_union IDENT    {
-                            // keep symtab empty
-                            // install ident to $1
+                         | struct_or_union IDENT    {   // incomplete
+                            $1.n->sue.label = ast_create_ident($2);
+                            $$ = $1; 
                          }
                          ;
 
@@ -655,16 +658,21 @@ compound_statement:
                     // thrown away
                   }
                   | '{' block_item_list '}' {
-                    
+                    symbol_scope *s = current;
+                    current = current->previous;
+                    symtab_delete(s);
                   }
                   ;
 
 block_item_list:
                block_item   {
-                $$.n = ast_list_start($1.n);
+                symbol_scope *s = symtab_create(current);
+                current = s;
+                symtab_install(current, $1.n);
+                // this approach will cause issues with statements
                }
                | block_item_list block_item {
-                $$.n = ast_list_insert($1.n, $3.n);
+                symtab_install(current, $2.n);
                }
                ;
 
@@ -677,12 +685,26 @@ block_item:
           }*/
           ;
 
-
-
-
 external_declaration:
                     declaration   { $$ = $1; }
                     ;
+
+function_definition:
+                   declaration_specifiers declarator declaration_list compound_statement    {
+                    
+                   }
+                   | declaration_specifiers declarator compound_statement    {
+                    
+                   }
+                   ;
+declaration_list:
+                declaration {
+                    $$.n = ast_list_start($1.n);
+                }
+                | declaration_list declaration  {
+                    $$.n = ast_list_insert($1.n, $2.n);
+                }
+                ;
 
 start:
      external_declaration start {
