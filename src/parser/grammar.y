@@ -214,9 +214,9 @@ unary_operator:
 
 cast_expression:
                unary_expression { $$ = $1; }
-               /*| '(' type_name ')' cast_expression  {
+               | '(' type_name ')' cast_expression  {
                 $$.n = ast_create_binop(TYPECAST, $2.n, $4.n);
-               }*/
+               }
                ;
 
 multiplicative_expression:
@@ -445,7 +445,7 @@ type_specifier:
               | BOOL      {
                 $$.n = ast_create_type(CHAR);
               }
-              | struct_or_union {
+              | struct_or_union_specifier {
                 $$ = $1;
               }
               ;
@@ -454,12 +454,12 @@ type_specifier:
 struct_or_union_specifier:
                          struct_or_union '{' struct_declaration_list '}'    {
                             $1.n->sue.label = NULL;
-                            symtab_enter_list($1.n->sue.symtab, $3.n);
+                            symtab_install_list($1.n->sue.symtab, $3.n);
                             $$ = $1;
                          }
                          | struct_or_union IDENT '{' struct_declaration_list '}' {
                             $1.n->sue.label = ast_create_ident($2);
-                            symtab_enter_list($1.n->sue.symtab, $4.n);
+                            symtab_install_list($1.n->sue.symtab, $4.n);
                             $$ = $1; 
                          }
                          | struct_or_union IDENT    {   // incomplete
@@ -509,7 +509,7 @@ specifier_qualifier_list:
 
 struct_declarator_list:
                       struct_declarator {
-                        $$.n = ast_list_start($1.n)
+                        $$.n = ast_list_start($1.n);
                       }
                       | struct_declarator_list ',' struct_declarator    {
                         $$.n = ast_list_insert($1.n, $3.n);
@@ -575,8 +575,11 @@ direct_declarator:
                  ;
 
 type_name:
-         specifier_qualifier_list abstract_declarator  {
-           $$.n = ast_list_merge($1.n, $2.n); 
+         specifier_qualifier_list   {
+            $$.n = $1.n;
+         }
+         | specifier_qualifier_list abstract_declarator  {
+            $$.n = ast_list_merge($1.n, $2.n); 
          }
          ;
 
@@ -594,13 +597,13 @@ abstract_declarator:
 
 direct_abstract_declarator:
                           '(' abstract_declarator ')'   {
-                            $$ = $1;
+                            $$ = $2;
                           }
                           | direct_abstract_array {
                             $$.n = ast_list_start($1.n);
                           }
                           | direct_abstract_declarator direct_abstract_array {
-                            $$.n = ast_list_insert($1.n, $2.n)
+                            $$.n = ast_list_insert($1.n, $2.n);
                           } 
                           | '(' ')' {
                             $$.n = ast_list_start(
@@ -615,7 +618,7 @@ direct_abstract_declarator:
                           ;
 
 direct_abstract_array:
-                     | '[' ']' {
+                     '[' ']' {
                         $$.n = ast_create_array(NULL, NULL);
                      }
                      | '[' NUMBER ']'  {
@@ -628,7 +631,7 @@ ident_list:
             $$.n = ast_list_start(ast_create_ident($1));
           }
           | ident_list ',' IDENT    {
-            $$.n = ast_list_insert($1.n, ast_create_ident($3.n));
+            $$.n = ast_list_insert($1.n, ast_create_ident($3));
           }
           ;
 
@@ -653,16 +656,28 @@ pointer:
        }
        ;
 
+/*
+statement:
+         compound_statement {$$ = $1;}
+         ;
+*/
+
 compound_statement:
-                  '{' '}'   {
+                  '{' '}'   { // convert to midrule if I "get time"
                     // thrown away
                   }
                   | '{' block_item_list '}' {
                     symbol_scope *s = current;
                     current = current->previous;
-                    symtab_delete(s);
+                    symtab_destroy(s);
                   }
                   ;
+
+/*
+labeled_statement:
+                 IDENT ':' statement    {}
+                 ;
+*/
 
 block_item_list:
                block_item   {
@@ -684,14 +699,20 @@ block_item:
             $$ = $1;
           }*/
           ;
-
+/*
+expression_statement:
+                    expression ';'  { $$ = $1; }
+                    | ';'   /*empty
+                    ;
+*/
 external_declaration:
-                    declaration   { $$ = $1; }
+                    function_definition { $$ = $1; }
+                    | declaration   { $$ = $1; }
                     ;
 
 function_definition:
                    declaration_specifiers declarator declaration_list compound_statement    {
-                    
+                     
                    }
                    | declaration_specifiers declarator compound_statement    {
                     
@@ -725,6 +746,7 @@ int main(int argc, char* argv[])
 {
     file = symtab_create(NULL);
     current = file;
+    current.scope_name = SCOPE_GLOBAL;
     if(argc>1)
     {
         yyin = fopen(argv[1], "r");

@@ -128,19 +128,47 @@ int symtab_enter(symbol_scope *scope, char *name, int ns, ast_node *decl_specs,
 void symtab_install(symbol_scope *scope, ast_node *n)
 {
     n = ast_list_reverse(n);
-    astprint(n);
+
     switch(n->list.value->op_type)  
     {
         case IDENT: //scalar
-            symtab_enter(scope,
+        {
+            char *key = n->list.value->ident.value;
+            ast_node *attrs = n->list.next;
+
+            symtabprint(
+                    key,
+                    yyin_name,
+                    line_num,
+                    attrs,
+                    scope
+                    );
+            
+            astprint(attrs);
+            symtab_enter(
+                    scope,
                     n->list.value->ident.value,
                     NS_IDENTS,
                     n->list.next,
                     yyin_name,
-                    line_num);
+                    line_num
+                    );
+        }
             break;
         default:
             STDERR_F("Failed to install op %d", n->list.value->op_type);
             break;
     }
+}
+
+void symtab_install_list(symbol_scope *scope, ast_node *l)
+{
+    ast_node *iter = l;
+
+    while(iter != NULL)
+    {
+        symtab_install(scope, iter->list.value);
+    }
+
+    return;
 }

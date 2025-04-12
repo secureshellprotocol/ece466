@@ -1,6 +1,8 @@
 #ifndef __SYMTAB_H_JR
 #define __SYMTAB_H_JR
 
+#include <stdint.h>
+
 #include <ast/ast.h>
 
 /* Symbol table is just a null-terminated linked-list of elements.
@@ -16,7 +18,15 @@ enum namespaces {
     NS_MEMBERS
 };
 
+enum scopes {
+    SCOPE_GLOBAL,
+    SCOPE_FUNCTION,
+    SCOPE_SUE
+};
+
 typedef struct symtab_elem_t {
+    uint32_t 
+
     ast_node *n;
     char *name;
 
@@ -28,12 +38,18 @@ typedef struct symtab_elem_t {
 
 typedef struct symbol_scope_t {
     struct symbol_scope_t *previous;
+    uint32_t name;
+
+    char *origin_file;
+    uint32_t origin_lineno;
 
     symtab_elem *idents;    //idents ("everything else")
     symtab_elem *labels;    //labels
     symtab_elem *sue_tags;       //struct, union, enum tags - members are
                                  //                           implicit
 } symbol_scope;
+
+// src/symtab/symtab.c
 
 // creates a symbol table scope -- must supply a pointer to a previous scope, or
 // NULL if this is the root/file scope.
@@ -54,7 +70,14 @@ int symtab_enter(symbol_scope *, char *name, int ns, ast_node *d,
         char *file_origin, unsigned int line_no_origin);
 
 void symtab_install(symbol_scope *scope, ast_node *n);
+void symtab_install_list(symbol_scope *scope, ast_node *l);
 
-void symtab_install_decl(symbol_scope *scope, ast_node *d);
+// src/symtab/symtabprint.c
 
+void symtabprint(char *ident, char *file_name, unsigned int line_num, 
+        ast_node *attrs, symbol_scope *scope);
+
+char *scopedecode(uint32_t scope);
+
+char *nsdecode(int ns);
 #endif
