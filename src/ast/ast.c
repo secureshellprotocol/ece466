@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <james_utils.h>
 #include <ast/ast.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
@@ -102,11 +103,91 @@ ast_node *ast_create_func(ast_node *label, ast_node *decl_specs, ast_node *param
     return n;
 }
 
-ast_node *ast_create_decl(ast_node *start)
+#define ITER_ON_LIST() (decl_list = decl_list->list.next);
+ast_node *ast_create_var(ast_node *decl_list)
 {
-    ast_node *n = create_node(DECLARATION);
-    n->decl.start = start;
-    n->decl.end = start;
+    if(decl_list == NULL)
+    {
+        return NULL;
+    }
+
+    ast_node *n = create_node(VARIABLE);
+    
+    n->var.i = decl_list->list.value;
+    
+    if(decl_list->list.next == NULL)
+    {
+        STDERR_F("symtab_install: No declspecs specified for %s!",
+                decl_list->list.value);
+        return NULL;
+    }
+    
+    ITER_ON_LIST();
+    // determine storage class
+    switch(decl_list->list.value->op_type)
+    {
+        case TYPEDEF:
+            STDERR("symtab_install: TYPEDEF is not supported! Throwing this decl away.");
+            return NULL;
+        case EXTERN: case STATIC: case AUTO: case REGISTER:
+            n->var.stgclass = decl_list->list.next->list.value;
+            ITER_ON_LIST();
+            break;
+        default:
+            // symtab will detect this, and choose the right stgclass
+            n->var.stgclass = NULL;
+            break;
+    }
+
+    if(verify_attr_list(decl_list) == 1)
+    {
+        STDERR_F("ast_create_var: Failed to create %s!", n->var.i);
+        return NULL;
+    }
+
     return n;
+}
+
+int verify_attr_list(ast_node *decl_list)
+{
+    static uint32_t specmask;
+    if(decl_list == NULL) return 1; // cant have an empty list
+    while(decl_list != NULL)
+    {
+        switch(decl_list->list.value->op_type)
+        {
+            case VOID:
+                if(IS_VOID(specmask))
+                {
+                    STDERR("verify_attr_list: void already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_VOID);
+                break;
+            case CHAR:
+            case SHORT:
+            case INT:
+            case LONG:
+                if(IS_LONG(specmask))
+                {
+                    if(IS_LONGLONG(specmask))
+                    {
+                        stderr()
+                    }
+                }
+            case FLOAT:
+            case DOUBLE:
+            case SIGNED:
+            case UNSIGNED:
+            case BOOL:
+                break;
+            default:
+                goto error;
+        }
+    }
+    return 0;
+
+error:
+    return 1;
 }
 

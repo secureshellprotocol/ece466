@@ -24,27 +24,29 @@ enum scopes {
     SCOPE_SUE
 };
 
-typedef struct symtab_elem_t {
-    uint32_t 
+typedef struct symtab_elem_t symtab_elem;
+typedef struct symbol_scope_t symbol_scope;
 
-    ast_node *n;
-    char *name;
+typedef struct symtab_elem_t {
+    ast_node *n;    // var, func, sue node.
+                    // this contains stgclass and attrs
+    char *key;      // typically a ptr into n
 
     char *file_origin;
     unsigned int line_no_origin;
 
-    struct symtab_elem_t *next;
+    struct symtab_elem_t *next; // next element in scope.
 } symtab_elem;
 
 typedef struct symbol_scope_t {
     struct symbol_scope_t *previous;
     uint32_t name;
 
-    char *origin_file;
-    uint32_t origin_lineno;
+    char *origin_file;      // where the scope starts
+    uint32_t origin_lineno; // line where scope starts
 
-    symtab_elem *idents;    //idents ("everything else")
-    symtab_elem *labels;    //labels
+    symtab_elem *idents;        //idents ("everything else")
+    symtab_elem *labels;        //labels
     symtab_elem *sue_tags;       //struct, union, enum tags - members are
                                  //                           implicit
 } symbol_scope;
@@ -53,7 +55,8 @@ typedef struct symbol_scope_t {
 
 // creates a symbol table scope -- must supply a pointer to a previous scope, or
 // NULL if this is the root/file scope.
-symbol_scope *symtab_create(symbol_scope *);
+symbol_scope *symtab_create(symbol_scope *p, uint32_t scope_name, 
+        char *origin_file, uint32_t origin_lineno);
 
 // destroys a symtab and all assoc. namespaces
 // preserves previous namespace

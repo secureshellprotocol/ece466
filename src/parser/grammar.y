@@ -28,7 +28,11 @@ void yyerror(const char *s);
 symbol_scope *file;
 symbol_scope *current;
 
+// lex stats
 extern FILE *yyin;
+
+extern char yyin_name[4096];
+extern int line_num;
 %}
 
 %token IDENT
@@ -151,12 +155,12 @@ postfix_expression:
                     $$.n = ast_create_func($1.n, $3.n, NULL);
                   }
                   | postfix_expression '.' IDENT    {
-                    $$.n = ast_create_binop('.', $1.n,
-                        ast_create_ident($3));
+                    $$.n = ast_create_binop('.', 
+                        $1.n, ast_create_ident($3));
                   }
                   | postfix_expression INDSEL IDENT {
-                    ast_node *ptr_to_1 = ast_create_unaop('*', $1.n);
-                    $$.n = ast_create_binop('.', ptr_to_1, 
+                    $$.n = ast_create_binop('.', 
+                        ast_create_unaop('*', $1.n), 
                         ast_create_ident($3));
                   }
                   | postfix_expression PLUSPLUS {
@@ -362,7 +366,7 @@ constant_expression:
 */
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            $$.n = ast_list_merge($1.n, $2.n);
+            $$.n = ast_list_merge($1.n, $2.n)
             symtab_install(current, $$.n);
            }
            ;
@@ -681,7 +685,8 @@ labeled_statement:
 
 block_item_list:
                block_item   {
-                symbol_scope *s = symtab_create(current);
+                symbol_scope *s = symtab_create(current, SCOPE_FUNCTION, 
+                    yyin_name, line_num);
                 current = s;
                 symtab_install(current, $1.n);
                 // this approach will cause issues with statements
@@ -744,9 +749,8 @@ start:
 
 int main(int argc, char* argv[])
 {
-    file = symtab_create(NULL);
+    file = symtab_create(NULL, SCOPE_GLOBAL, yyin_name, 1);
     current = file;
-    current.scope_name = SCOPE_GLOBAL;
     if(argc>1)
     {
         yyin = fopen(argv[1], "r");

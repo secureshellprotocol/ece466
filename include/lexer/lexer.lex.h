@@ -52,6 +52,7 @@
 #define TS_DOUBLE   64
 #define TS_SIGNED   128
 #define TS_UNSIGNED 256
+#define TS_LONGLONG 512
 
 #define IS_VOID(tag) ((tag & TS_VOID))
 #define IS_CHAR(tag) ((tag & TS_CHAR))
@@ -62,6 +63,7 @@
 #define IS_DOUBLE(tag) ((tag & TS_DOUBLE))
 #define IS_SIGNED(tag) ((tag & TS_SIGNED))
 #define IS_UNSIGNED(tag) ((tag & TS_UNSIGNED))
+#define IS_LONGLONG(tag) ((tag & TS_LONGLONG))
 
 // invalid
 #define INVAL_BIT   (1 << 31)

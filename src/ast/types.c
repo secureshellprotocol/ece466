@@ -4,6 +4,9 @@
 #include <ast/types.h>
 #include <symtab/symtab.h>
 
+extern char yyin_name[4096];
+extern int line_num;
+
 ast_node *ast_create_type(uint32_t type_token)
 {
     ast_node *n = create_node(type_token);
@@ -11,7 +14,8 @@ ast_node *ast_create_type(uint32_t type_token)
     switch(type_token)
     {
         case STRUCT: case UNION: case ENUM:
-            n->sue.symtab = symtab_create(NULL);
+            n->sue.symtab = symtab_create(NULL, SCOPE_SUE,
+                    yyin_name, line_num);
             break;
         default:
             break;

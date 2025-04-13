@@ -90,7 +90,10 @@ void astprint(ast_node *n)
         break;
     case FUNCTION:
         printf("FUNCTION");
-        astprint(n->func.label);
+        if(n->func.label != NULL)
+        {
+            astprint(n->func.label);
+        }
         if(n->func.decl_specs != NULL)
         {
             JUSTIFY;
@@ -240,3 +243,5 @@ void astprint(ast_node *n)
     depth--;
     return;
 }
+
+
