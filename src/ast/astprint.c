@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <james_utils.h>
 #include <ast/ast.h>
 #include <lexer/lex_utils.h>
 #include <parser/grammar.tab.h>
@@ -15,6 +16,12 @@
 // selecting some root node, start to print
 void astprint(ast_node *n)
 {
+    if(n == NULL)
+    {
+        STDERR("Given NULL node!");
+        return;
+    }
+
     static int depth;
     ++depth;
 
@@ -76,6 +83,28 @@ void astprint(ast_node *n)
         if(n->ternop.right != NULL)
             astprint(n->ternop.right);
         break;
+    case LIST:
+        printf("LIST ITEM");
+        astprint(n->list.value);
+        if(n->list.next != NULL)
+        {
+            depth--;
+            astprint(n->list.next);
+            depth++;
+        }
+        break;
+    case VARIABLE:
+        printf("VARIABLE");
+        JUSTIFY;
+        astprint(n->var.i);
+        printf(" of stgclass ");
+        if(n->var.stgclass != NULL)
+            astprint(n->var.stgclass);
+        else
+            printf(" NONE\n");
+        printf(" and declspecs:\n");
+        astprint(n->var.attr_list);
+        break;
     case ARRAY:
         printf("ARRAY");
         JUSTIFY;
@@ -105,31 +134,6 @@ void astprint(ast_node *n)
             JUSTIFY;
             printf("WITH PARAMETERS \n");
             astprint(n->func.params_list);
-        }
-        break;
-//    case DECLARATION:
-//        printf("DECLARATION\n");
-//        if(n->decl.decl_specs != NULL)
-//        {
-//            JUSTIFY;
-//            printf(" of SPECS:\n");
-//            astprint(n->decl.decl_specs);
-//        }
-//        if(n->decl.decl_list != NULL)
-//        {
-//            JUSTIFY;
-//            printf(" of declarators:\n");
-//            astprint(n->decl.decl_list);
-//        }
-//        break;
-    case LIST:
-        printf("LIST ITEM");
-        astprint(n->list.value);
-        if(n->list.next != NULL)
-        {
-            depth--;
-            astprint(n->list.next);
-            depth++;
         }
         break;
     // constant keywords -- 100j 
@@ -236,8 +240,8 @@ void astprint(ast_node *n)
         printf("WHEEL\n");
         break;
     default:
-        fprintf(stderr, "astprint: If I cannot bend Heaven, I shall move Hell.\n\
-            astprint: unexpected node type %d\n", n->op_type);
+        STDERR("If I cannot bend Heaven, I shall move Hell.");
+        STDERR_F("Unexpected node type %d\n", n->op_type);
     }
 
     depth--;

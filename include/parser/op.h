@@ -12,4 +12,7 @@ enum {
     ARRAY,
     VARIABLE
 };
+
+
+
 #endif

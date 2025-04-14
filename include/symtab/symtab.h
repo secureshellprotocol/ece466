@@ -40,7 +40,8 @@ typedef struct symtab_elem_t {
 
 typedef struct symbol_scope_t {
     struct symbol_scope_t *previous;
-    uint32_t name;
+    //char *name;
+    enum scopes scope;
 
     char *origin_file;      // where the scope starts
     uint32_t origin_lineno; // line where scope starts
@@ -55,7 +56,7 @@ typedef struct symbol_scope_t {
 
 // creates a symbol table scope -- must supply a pointer to a previous scope, or
 // NULL if this is the root/file scope.
-symbol_scope *symtab_create(symbol_scope *p, uint32_t scope_name, 
+symbol_scope *symtab_create(symbol_scope *p, enum scopes scope_name, 
         char *origin_file, uint32_t origin_lineno);
 
 // destroys a symtab and all assoc. namespaces
@@ -71,16 +72,17 @@ symtab_elem *symtab_lookup(symbol_scope *, char *name, int ns);
 // returns 0 on success
 int symtab_enter(symbol_scope *, char *name, int ns, ast_node *d,
         char *file_origin, unsigned int line_no_origin);
+int _symtab_inject_elem(symbol_scope *scope, enum namespaces ns, symtab_elem *e);
 
+// symbol table insertion front-end: just needs a variable node and scope
 void symtab_install(symbol_scope *scope, ast_node *n);
 void symtab_install_list(symbol_scope *scope, ast_node *l);
 
 // src/symtab/symtabprint.c
 
-void symtabprint(char *ident, char *file_name, unsigned int line_num, 
-        ast_node *attrs, symbol_scope *scope);
+void symtabprint(symbol_scope *scope, enum namespaces ns, char *l);
 
-char *scopedecode(uint32_t scope);
+char *scopedecode(enum scopes scope);
 
-char *nsdecode(int ns);
+char *nsdecode(enum namespaces ns);
 #endif

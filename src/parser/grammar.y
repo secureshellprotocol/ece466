@@ -28,6 +28,10 @@ void yyerror(const char *s);
 symbol_scope *file;
 symbol_scope *current;
 
+// HORRIBLE KLUDGE -- we know the next scope we're entering based on the last
+// seen terms
+enum scopes deployed_scope;
+
 // lex stats
 extern FILE *yyin;
 
@@ -366,7 +370,7 @@ constant_expression:
 */
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            $$.n = ast_list_merge($1.n, $2.n)
+            $$.n = ast_list_merge($1.n, $2.n);
             symtab_install(current, $$.n);
            }
            ;
@@ -570,11 +574,15 @@ direct_declarator:
                         ast_create_array(NULL, ast_create_num($3))
                     );
                  }
-                 | direct_declarator '(' ident_list ')' {
-                    $$.n = ast_create_func($1.n, NULL, $3.n);
-                 }
+                 /*| direct_declarator '(' ident_list ')' {
+                    $$.n = ast_list_start(
+                        ast_create_func($1.n, NULL, $3.n)
+                    );
+                 }*/
                  | direct_declarator '(' ')'    {
-                    $$.n = ast_create_func($1.n, NULL, NULL);
+                    $$.n = ast_list_start(
+                        ast_create_func($1.n, NULL, NULL)
+                    );
                  }
                  ;
 
@@ -630,14 +638,14 @@ direct_abstract_array:
                      } 
                      ;
 
-ident_list:
+/*ident_list:
           IDENT {
             $$.n = ast_list_start(ast_create_ident($1));
           }
           | ident_list ',' IDENT    {
             $$.n = ast_list_insert($1.n, ast_create_ident($3));
           }
-          ;
+          ;*/
 
 pointer:
        '*' { 
@@ -667,10 +675,12 @@ statement:
 */
 
 compound_statement:
-                  '{' '}'   { // convert to midrule if I "get time"
-                    // thrown away
+                  '{'   {
+                    symbol_scope *s = symtab_create(current, deployed_scope, 
+                        yyin_name, line_num);
+                    current = s;
                   }
-                  | '{' block_item_list '}' {
+                  | '}'   {
                     symbol_scope *s = current;
                     current = current->previous;
                     symtab_destroy(s);
@@ -681,13 +691,10 @@ compound_statement:
 labeled_statement:
                  IDENT ':' statement    {}
                  ;
-*/
+
 
 block_item_list:
                block_item   {
-                symbol_scope *s = symtab_create(current, SCOPE_FUNCTION, 
-                    yyin_name, line_num);
-                current = s;
                 symtab_install(current, $1.n);
                 // this approach will cause issues with statements
                }
@@ -702,8 +709,9 @@ block_item:
           }
           /*statement {
             $$ = $1;
-          }*/
+          }
           ;
+*/
 /*
 expression_statement:
                     expression ';'  { $$ = $1; }
@@ -746,7 +754,7 @@ start:
      ;
 
 %%
-
+/*
 int main(int argc, char* argv[])
 {
     file = symtab_create(NULL, SCOPE_GLOBAL, yyin_name, 1);
@@ -759,9 +767,10 @@ int main(int argc, char* argv[])
 
     yyparse();
 }
-
+*/
 void yyerror(const char *s)
 {
-    fprintf(stderr, "parser: You have disturbed me almost to the point of \
-insanity...There. I am insane now.\nparser: %s\n", s);
+    STDERR("You have disturbed me almost to the point of \
+insanity...There. I am insane now."); 
+    STDERR_F("%s\n", s);
 }

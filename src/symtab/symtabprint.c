@@ -3,38 +3,46 @@
 #include <james_utils.h>
 #include <symtab/symtab.h>
 
-void symtabprint(char *ident, char *file_name, unsigned int line_num, 
-        ast_node *attrs, symbol_scope *scope)
+#define PRINT(fmt, ...) \
+    fprintf(stderr, fmt "\n", __VA_ARGS__);
+
+void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
 {
-    STDERR_F("%s is defined at %s:%u [in %s scope starting at %s:%u] as:\n",
-            ident, file_name, line_num, scopedecode(scope->name), 
-            scope->origin_file, scope->origin_lineno
-            );
+    symtab_elem *e = symtab_lookup(scope, l, ns);
+
+    if(e != NULL)
+    {
+        astprint(e->n);
+    }
+    else
+    {
+        STDERR_F("%s not found in %s", l, nsdecode(ns));
+    }
 }
 
-char *scopedecode(uint32_t scope)
+char *scopedecode(enum scopes s)
 {
     static char name[32];
     name[0] = '\0';
 
-    switch(scope)
+    switch(s)
     {
         case SCOPE_GLOBAL:
-            strcpy("global", name);
+            strcpy(name, "global");
             return name;
         case SCOPE_FUNCTION:
-            strcpy("function", name);
+            strcpy(name, "function");
             return name;
         case SCOPE_SUE:
-            strcpy("struct/union member", name);
+            strcpy(name, "struct/union member");
             return name;
         default:
-            strcpy("UNDEFINED", name);
+            strcpy(name, "UNDEFINED");
             return name;
     }
 }
 
-char *nsdecode(int ns)
+char *nsdecode(enum namespaces ns)
 {
     static char name[32];
     name[0] = '\0';
@@ -42,19 +50,19 @@ char *nsdecode(int ns)
     switch(ns)
     {
         case NS_LABELS:
-            strcpy("label", name);
+            strcpy(name, "label");
             return name;
         case NS_SUE:
-            strcpy("struct/union", name);
+            strcpy(name, "struct/union");
             return name;
         case NS_IDENTS:
-            strcpy("ident", name);
+            strcpy(name, "ident");
             return name;
         case NS_MEMBERS:
-            strcpy("member", name);
+            strcpy(name, "member");
             return name;
         default:
-            strcpy("UNDEFINED", name);
+            strcpy(name, "UNDEFINED");
             return name;
     }
 }

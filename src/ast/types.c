@@ -14,7 +14,7 @@ ast_node *ast_create_type(uint32_t type_token)
     switch(type_token)
     {
         case STRUCT: case UNION: case ENUM:
-            n->sue.symtab = symtab_create(NULL, SCOPE_SUE,
+            n->sue.symtab = symtab_create(NULL, NS_SUE,
                     yyin_name, line_num);
             break;
         default:

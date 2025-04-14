@@ -8,6 +8,109 @@
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
 
+
+static int verify_attr_list(ast_node *decl_list)
+{
+    #define ITER_ON_LIST() (decl_list = decl_list->list.next);
+    
+    static uint32_t specmask;
+    
+    specmask = 0;
+
+    if(decl_list == NULL) 
+        return 1; // cant have an empty list
+    
+    while(decl_list != NULL)
+    {
+        switch(decl_list->list.value->op_type)
+        {
+            case VOID:
+                if(IS_VOID(specmask))
+                {
+                    STDERR("void already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_VOID);
+                break;
+            case CHAR:
+                if(IS_CHAR(specmask))
+                {
+                    STDERR("char already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_CHAR);
+                break;
+            case SHORT:
+                if(IS_SHORT(specmask))
+                {
+                    STDERR("short already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_SHORT);
+                break;
+            case INT:
+                if(IS_INT(specmask))
+                {
+                    STDERR("int already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_INT);
+                break;
+            case LONG:
+                if(IS_LONG(specmask))
+                {
+                    if(IS_LONGLONG(specmask))
+                    {
+                        STDERR("Too long of a long!")
+                    }
+                }
+                break;
+            case FLOAT:
+                if(IS_FLOAT(specmask))
+                {
+                    STDERR("float already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_FLOAT);
+                break;
+            case DOUBLE:
+                if(IS_DOUBLE(specmask))
+                {
+                    STDERR("double already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_DOUBLE);
+                break;
+            case SIGNED:
+                if(IS_SIGNED(specmask))
+                {
+                    STDERR("signed already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_SIGNED);
+                break;
+            case UNSIGNED:
+                if(IS_UNSIGNED(specmask))
+                {
+                    STDERR("unsigned already specified! bailing");
+                    goto error;
+                }
+                TAG_SET(specmask, TS_UNSIGNED);
+                break;
+            default:
+                STDERR_F("Unrecognized op type %d", 
+                        decl_list->list.value->op_type);
+                goto error;
+        }
+        ITER_ON_LIST(); 
+    }
+    return 0;
+
+error:
+
+    return 1;
+}
+
 ast_node *create_node(int ot)
 {
     ast_node *n = (ast_node *) calloc(1, sizeof(ast_node));
@@ -103,7 +206,6 @@ ast_node *ast_create_func(ast_node *label, ast_node *decl_specs, ast_node *param
     return n;
 }
 
-#define ITER_ON_LIST() (decl_list = decl_list->list.next);
 ast_node *ast_create_var(ast_node *decl_list)
 {
     if(decl_list == NULL)
@@ -112,82 +214,43 @@ ast_node *ast_create_var(ast_node *decl_list)
     }
 
     ast_node *n = create_node(VARIABLE);
-    
+   
     n->var.i = decl_list->list.value;
+    n->var.stgclass = NULL;
+    n->var.attr_list = decl_list->list.next;
     
-    if(decl_list->list.next == NULL)
+    //astprint(n);
+
+    ast_node *current_node = n->var.attr_list;
+
+    while(current_node != NULL)
     {
-        STDERR_F("symtab_install: No declspecs specified for %s!",
-                decl_list->list.value);
-        return NULL;
-    }
-    
-    ITER_ON_LIST();
-    // determine storage class
-    switch(decl_list->list.value->op_type)
-    {
-        case TYPEDEF:
-            STDERR("symtab_install: TYPEDEF is not supported! Throwing this decl away.");
-            return NULL;
-        case EXTERN: case STATIC: case AUTO: case REGISTER:
-            n->var.stgclass = decl_list->list.next->list.value;
-            ITER_ON_LIST();
-            break;
-        default:
-            // symtab will detect this, and choose the right stgclass
-            n->var.stgclass = NULL;
-            break;
+        switch(current_node->list.value->op_type)
+        {
+            case TYPEDEF: case EXTERN: case STATIC: case AUTO: case REGISTER:
+                if(current_node->list.next != NULL)
+                {
+                    STDERR_F("Multiple storage classes specified for %s! bailing",
+                            n->var.i->ident.value);
+                    return NULL;
+                }
+                
+                n->var.stgclass = current_node->list.value; // decouple storage
+                                                            // class from list
+                current_node->list.prev->list.next = NULL; 
+                break;
+            default:
+                break;
+        }
+        current_node = current_node->list.next;
     }
 
-    if(verify_attr_list(decl_list) == 1)
+    if(verify_attr_list(n->var.attr_list) == 1)
     {
-        STDERR_F("ast_create_var: Failed to create %s!", n->var.i);
+        STDERR_F("Failed to create %s!", n->var.i->ident.value);
         return NULL;
     }
-
     return n;
 }
 
-int verify_attr_list(ast_node *decl_list)
-{
-    static uint32_t specmask;
-    if(decl_list == NULL) return 1; // cant have an empty list
-    while(decl_list != NULL)
-    {
-        switch(decl_list->list.value->op_type)
-        {
-            case VOID:
-                if(IS_VOID(specmask))
-                {
-                    STDERR("verify_attr_list: void already specified! bailing");
-                    goto error;
-                }
-                TAG_SET(specmask, TS_VOID);
-                break;
-            case CHAR:
-            case SHORT:
-            case INT:
-            case LONG:
-                if(IS_LONG(specmask))
-                {
-                    if(IS_LONGLONG(specmask))
-                    {
-                        stderr()
-                    }
-                }
-            case FLOAT:
-            case DOUBLE:
-            case SIGNED:
-            case UNSIGNED:
-            case BOOL:
-                break;
-            default:
-                goto error;
-        }
-    }
-    return 0;
-
-error:
-    return 1;
-}
 

@@ -6,12 +6,12 @@
 #include <string.h>
 
 #define STDERR(message) \
-    fprintf(stderr, "%s\n", message);
+    fprintf(stderr, "%s: %s\n", __func__, message);
 
 #define STDERR_F(fmt, ...) \
-    fprintf(stderr, fmt "\n", __VA_ARGS__);
+    fprintf(stderr, "%s: " fmt "\n", __func__ , __VA_ARGS__);
 
 #define ERROR(fmt, ...) \
-    fprintf(stderr, fmt "\n", __VA_ARGS__, strerror(errno));
+    fprintf(stderr, "%s: " fmt "\n", __func__, __VA_ARGS__, strerror(errno));
 
 #endif

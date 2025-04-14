@@ -2,10 +2,12 @@ CC=gcc
 LEX=flex
 YACC=bison
 YFLAGS=-t --language=C
-CFLAGS=-g -Wall -pedantic -Iinclude/
+CFLAGS=-g3 \
+	   -Wall -Wpedantic -Wimplicit-fallthrough \
+	   -Iinclude/
 
 all: \
-	objtrigger \
+	objtrigger obj/main.o \
 	obj/grammar.o \
 	obj/lex.yy.o obj/lex_utils.o \
 	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o \
@@ -17,6 +19,9 @@ objtrigger: | obj
 
 obj:
 	mkdir -p obj
+
+obj/main.o: src/main.c
+	$(CC) $(CFLAGS) -c src/main.c -o obj/main.o
 
 obj/grammar.o: src/parser/grammar.y
 	$(YACC) \
