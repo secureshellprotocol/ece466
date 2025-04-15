@@ -34,8 +34,9 @@ symbol_scope *symtab_create(symbol_scope *p, enum scopes scope_type,
     return s;
 }
 
-void symtab_destroy(symbol_scope *s)
+symbol_scope *symtab_destroy(symbol_scope *s)
 {
+    symbol_scope *previous = s->previous;
     symtab_elem *ns_list[] = {
         s->idents,
         s->labels,
@@ -54,7 +55,7 @@ void symtab_destroy(symbol_scope *s)
     }
 
     free(s);
-    return;
+    return previous; 
 }
 
 symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)

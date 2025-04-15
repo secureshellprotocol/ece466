@@ -37,13 +37,17 @@ struct ast_node_ternop_t {
     ast_node *right;
 };
 
+struct ast_node_func_t {
+    ast_node *label;
+    ast_node *arglist;
+};
+
 struct ast_list_t   {
     ast_node *value;
     ast_node *prev;
     ast_node *next;
 };
 
-// Terminal nodes
 struct ast_node_num_t {
     union {
         unsigned long long ival;
@@ -61,27 +65,21 @@ struct ast_node_char_t {
     int s_len;
 };
 
+struct ast_node_var_t {
+    ast_node *i;
+    ast_node *stgclass;
+    ast_node *attr_list;    // refactor to decl_specs
+};
 
-struct ast_node_scalar_t {    
-    uint32_t stgclass;
-    uint32_t typetags;
+struct ast_node_fndef_t {
+    ast_node *label;
+    ast_node *attr_list;
+    ast_node *stmt_list;
 };
 
 struct ast_node_array_t {
     ast_node *to;
     ast_node *size;
-};
-
-struct ast_node_func_t {
-    ast_node *label;
-    ast_node *decl_specs;
-    ast_node *params_list;
-};
-
-struct ast_node_var_t {
-    ast_node *i;
-    ast_node *stgclass;
-    ast_node *attr_list;
 };
 
 struct ast_node_ptr_t {
@@ -106,11 +104,12 @@ typedef struct ast_node_t {
         struct ast_node_unaop_t unaop;
         struct ast_node_binop_t binop;
         struct ast_node_ternop_t ternop;
-    
+        struct ast_node_func_t fncall;
+        
+
         // types
-        struct ast_node_scalar_t sc;
-        struct ast_node_func_t func;
         struct ast_node_var_t var;
+        struct ast_node_fndef_t fndef;
         struct ast_node_array_t array;
         struct ast_node_ptr_t ptr;
         struct ast_node_sue_t sue;
@@ -135,13 +134,18 @@ ast_node *ast_create_constant(unsigned long long int ulld);
 ast_node *ast_create_unaop(int token, ast_node *e);
 ast_node *ast_create_binop(int token, ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
-
 ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list);
+
 ast_node *ast_create_var(ast_node *decl_list);
+ast_node *ast_create_fndef(ast_node *label, ast_node *attr_list, ast_node *stmt_list);
+
+void free_node(ast_node *n);
+
+// types.c
 ast_node *ast_create_array(ast_node *to, ast_node *size);
 ast_node *ast_create_ptr(ast_node *to, ast_node *type_quals);
 
-void free_node(ast_node *n);
+
 
 // ast_list.c
 

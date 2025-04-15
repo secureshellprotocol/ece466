@@ -28,15 +28,20 @@ void yyerror(const char *s);
 symbol_scope *file;
 symbol_scope *current;
 
-// HORRIBLE KLUDGE -- we know the next scope we're entering based on the last
-// seen terms
-enum scopes deployed_scope;
-
 // lex stats
 extern FILE *yyin;
 
 extern char yyin_name[4096];
 extern int line_num;
+
+// credit gk for the macro idea
+#define ENTER_SCOPE(scope) \
+    current = symtab_create(current, scope, yyin_name, line_num)
+
+// current gets replaced with the previous scope.
+#define EXIT_SCOPE() \
+    current = symtab_destroy(current)
+
 %}
 
 %token IDENT
@@ -153,10 +158,10 @@ postfix_expression:
                     $$.n = ast_create_unaop('*', add);
                   }
                   | postfix_expression '(' ')'  {
-                    $$.n = ast_create_func($1.n, NULL, NULL);
+                    $$.n = ast_create_func($1.n, NULL);
                   }
                   | postfix_expression '(' argument_expression_list ')' {
-                    $$.n = ast_create_func($1.n, $3.n, NULL);
+                    $$.n = ast_create_func($1.n, $3.n);
                   }
                   | postfix_expression '.' IDENT    {
                     $$.n = ast_create_binop('.', 
@@ -574,11 +579,11 @@ direct_declarator:
                         ast_create_array(NULL, ast_create_num($3))
                     );
                  }
-                 /*| direct_declarator '(' ident_list ')' {
+                 | direct_declarator '(' ident_list ')' {
                     $$.n = ast_list_start(
                         ast_create_func($1.n, NULL, $3.n)
                     );
-                 }*/
+                 }
                  | direct_declarator '(' ')'    {
                     $$.n = ast_list_start(
                         ast_create_func($1.n, NULL, NULL)
@@ -668,38 +673,28 @@ pointer:
        }
        ;
 
-/*
+
 statement:
          compound_statement {$$ = $1;}
          ;
-*/
+
 
 compound_statement:
-                  '{'   {
-                    symbol_scope *s = symtab_create(current, deployed_scope, 
-                        yyin_name, line_num);
-                    current = s;
+                  '{' '}'   {
+                    $$ = NULL;
                   }
-                  | '}'   {
-                    symbol_scope *s = current;
-                    current = current->previous;
-                    symtab_destroy(s);
+                  |'{' block_item_list '}'   {
+                    $$ = $2;
                   }
-                  ;
-
-/*
-labeled_statement:
-                 IDENT ':' statement    {}
-                 ;
-
 
 block_item_list:
                block_item   {
-                symtab_install(current, $1.n);
-                // this approach will cause issues with statements
+                //symtab_install(current, $1.n);
+                $$.n = ast_list_start($1.n);
                }
                | block_item_list block_item {
-                symtab_install(current, $2.n);
+                //symtab_install(current, $2.n);
+                $$.n = ast_list_insert($1.n, $2.n);
                }
                ;
 
@@ -707,11 +702,11 @@ block_item:
           declaration   {
             $$ = $1;
           }
-          /*statement {
+          statement {
             $$ = $1;
           }
           ;
-*/
+
 /*
 expression_statement:
                     expression ';'  { $$ = $1; }
@@ -724,11 +719,12 @@ external_declaration:
                     ;
 
 function_definition:
-                   declaration_specifiers declarator declaration_list compound_statement    {
-                     
-                   }
-                   | declaration_specifiers declarator compound_statement    {
-                    
+                   declaration_specifiers declarator {
+                    symtab_install()
+                    ENTER_SCOPE(SCOPE_FUNCTION);
+                   } compound_statement    {
+                    $$.n = ast_create_func_def($1.n, $2.n, $3.n);
+                    EXIT_SCOPE();
                    }
                    ;
 declaration_list:

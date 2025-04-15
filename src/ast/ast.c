@@ -196,13 +196,12 @@ ast_node *ast_create_ternop(
     return n;
 }
 
-ast_node *ast_create_func(ast_node *label, ast_node *decl_specs, ast_node *params_list)
+ast_node *ast_create_func_call(ast_node *label, ast_node *arglist)
 {
     ast_node *n = create_node(FUNCTION);
     
-    n->func.label = label;
-    n->func.decl_specs = decl_specs;
-    n->func.params_list = params_list;
+    n->fncall.label = label;
+    n->fncall.arglist = arglist;
     return n;
 }
 
@@ -253,4 +252,12 @@ ast_node *ast_create_var(ast_node *decl_list)
     return n;
 }
 
-
+ast_node *ast_create_func_def(ast_node *label, ast_node *attr_list, ast_node *stmt_list)
+{
+    ast_node *n = create_node(FNDEF);
+    
+    n->fndef.label = label;
+    n->fndef.attr_list = attr_list; // same as return value
+    n->fndef.stmt_list = stmt_list;
+    return n;
+}

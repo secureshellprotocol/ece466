@@ -60,8 +60,8 @@ symbol_scope *symtab_create(symbol_scope *p, enum scopes scope_name,
         char *origin_file, uint32_t origin_lineno);
 
 // destroys a symtab and all assoc. namespaces
-// preserves previous namespace
-void symtab_destroy(symbol_scope *);
+// preserves and returns previous namespace (possibly null)
+symbol_scope *symtab_destroy(symbol_scope *);
 
 // linearly searches for a named symbol in a specified namespace
 //  if not found, returns NULL.
