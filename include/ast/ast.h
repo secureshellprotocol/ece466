@@ -65,10 +65,10 @@ struct ast_node_char_t {
     int s_len;
 };
 
-struct ast_node_var_t {
-    ast_node *i;
+struct ast_node_decl_t {
+    ast_node *decl_list;
     ast_node *stgclass;
-    ast_node *attr_list;    // refactor to decl_specs
+    ast_node *decl_specs;
 };
 
 struct ast_node_fndef_t {
@@ -108,7 +108,7 @@ typedef struct ast_node_t {
         
 
         // types
-        struct ast_node_var_t var;
+        struct ast_node_decl_t d;
         struct ast_node_fndef_t fndef;
         struct ast_node_array_t array;
         struct ast_node_ptr_t ptr;
@@ -134,18 +134,19 @@ ast_node *ast_create_constant(unsigned long long int ulld);
 ast_node *ast_create_unaop(int token, ast_node *e);
 ast_node *ast_create_binop(int token, ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
-ast_node *ast_create_func(ast_node *label, ast_node *declspecs, ast_node *params_list);
+ast_node *ast_create_func_call(ast_node *label, ast_node *arglist);
 
-ast_node *ast_create_var(ast_node *decl_list);
+ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list);
 ast_node *ast_create_fndef(ast_node *label, ast_node *attr_list, ast_node *stmt_list);
+
+// should reallyyyy be moved to a utilities c
+int verify_decl_specs(ast_node *decl_specs);
 
 void free_node(ast_node *n);
 
 // types.c
 ast_node *ast_create_array(ast_node *to, ast_node *size);
 ast_node *ast_create_ptr(ast_node *to, ast_node *type_quals);
-
-
 
 // ast_list.c
 

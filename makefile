@@ -5,6 +5,7 @@ YFLAGS=-t --language=C
 CFLAGS=-g3 \
 	   -Wall -Wpedantic -Wimplicit-fallthrough \
 	   -Iinclude/
+OUTNAME=ccc
 
 all: \
 	objtrigger obj/main.o \
@@ -12,7 +13,7 @@ all: \
 	obj/lex.yy.o obj/lex_utils.o \
 	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o \
 	obj/symtab.o obj/symtabprint.o 
-	$(CC) $(CFLAGS) obj/*.o 
+	$(CC) $(CFLAGS) obj/*.o -o $(OUTNAME)
 
 .PHONY: objtrigger
 objtrigger: | obj
@@ -81,4 +82,4 @@ parser_exprtest: all
 .PHONY: clean
 clean:
 	rm -v -r obj/ 
-	rm -v *.out *.output
+	rm -v *.out *.output $(OUTNAME)

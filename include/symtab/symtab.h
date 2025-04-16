@@ -28,12 +28,15 @@ typedef struct symtab_elem_t symtab_elem;
 typedef struct symbol_scope_t symbol_scope;
 
 typedef struct symtab_elem_t {
-    ast_node *n;    // var, func, sue node.
-                    // this contains stgclass and attrs
-    char *key;      // typically a ptr into n
+    ast_node *declarator;
+    ast_node *decl_specs;
+    ast_node *stgclass;
+
+    char *key;
+    int complete;
 
     char *file_origin;
-    unsigned int line_no_origin;
+    unsigned int line_num_origin;
 
     struct symtab_elem_t *next; // next element in scope.
 } symtab_elem;
@@ -70,13 +73,14 @@ symtab_elem *symtab_lookup(symbol_scope *, char *name, int ns);
 // appends a symbol into a namespace. can provide optional attribute list
 // returns -1 on failure
 // returns 0 on success
-int symtab_enter(symbol_scope *, char *name, int ns, ast_node *d,
-        char *file_origin, unsigned int line_no_origin);
+int symtab_enter(symbol_scope *, char *name, enum namespaces ns, 
+        ast_node *v, char *file_origin, unsigned int line_no_origin);
 int _symtab_inject_elem(symbol_scope *scope, enum namespaces ns, symtab_elem *e);
 
 // symbol table insertion front-end: just needs a variable node and scope
-void symtab_install(symbol_scope *scope, ast_node *n);
-void symtab_install_list(symbol_scope *scope, ast_node *l);
+void symtab_install(symbol_scope *scope, 
+        ast_node *decl_specs, ast_node *decl_list,
+        char *yyin_name, unsigned int line_num);
 
 // src/symtab/symtabprint.c
 

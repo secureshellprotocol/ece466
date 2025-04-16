@@ -9,20 +9,20 @@
 #include <parser/op.h>
 
 
-static int verify_attr_list(ast_node *decl_list)
+int verify_decl_specs(ast_node *decl_specs)
 {
-    #define ITER_ON_LIST() (decl_list = decl_list->list.next);
+    #define ITER_ON_LIST() (decl_specs = decl_specs->list.next);
     
     static uint32_t specmask;
     
     specmask = 0;
 
-    if(decl_list == NULL) 
+    if(decl_specs == NULL) 
         return 1; // cant have an empty list
     
-    while(decl_list != NULL)
+    while(decl_specs != NULL)
     {
-        switch(decl_list->list.value->op_type)
+        switch(decl_specs->list.value->op_type)
         {
             case VOID:
                 if(IS_VOID(specmask))
@@ -99,7 +99,7 @@ static int verify_attr_list(ast_node *decl_list)
                 break;
             default:
                 STDERR_F("Unrecognized op type %d", 
-                        decl_list->list.value->op_type);
+                        decl_specs->list.value->op_type);
                 goto error;
         }
         ITER_ON_LIST(); 
@@ -205,59 +205,71 @@ ast_node *ast_create_func_call(ast_node *label, ast_node *arglist)
     return n;
 }
 
-ast_node *ast_create_var(ast_node *decl_list)
+//ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
+//{
+//    if(decl_list == NULL || decl_specs == NULL)
+//    {
+//        STDERR("Recieved invalid arguments!")
+//        return NULL;
+//    }
+//
+//    ast_node *n = create_node(DECLARATION);
+//   
+//    n->var.i = decl_list->list.value;
+//    n->var.stgclass = NULL;
+//    n->var.attr_list = decl_list->list.next;
+//    
+//    ast_node *current_node = n->var.attr_list;
+//
+//    while(current_node != NULL)
+//    {
+//        switch(current_node->list.value->op_type)
+//        {
+//            case TYPEDEF: case EXTERN: case STATIC: case AUTO: case REGISTER:
+//                if(current_node->list.next != NULL)
+//                {
+//                    STDERR_F("Multiple storage classes specified for %s! bailing",
+//                            n->var.i->ident.value);
+//                    return NULL;
+//                }
+//                
+//                n->var.stgclass = current_node->list.value; // decouple storage
+//                                                            // class from list
+//                current_node->list.prev->list.next = NULL; 
+//                break;
+//            default:
+//                break;
+//        }
+//        current_node = current_node->list.next;
+//    }
+//
+//    if(verify_attr_list(n->var.attr_list) == 1)
+//    {
+//        STDERR_F("Failed to create %s!", n->var.i->ident.value);
+//        return NULL;
+//    }
+//    return n;
+//}
+
+ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
 {
-    if(decl_list == NULL)
-    {
-        return NULL;
-    }
+    ast_node *n = create_node(DECLARATION);
 
-    ast_node *n = create_node(VARIABLE);
-   
-    n->var.i = decl_list->list.value;
-    n->var.stgclass = NULL;
-    n->var.attr_list = decl_list->list.next;
-    
-    //astprint(n);
+    n->d.decl_list = decl_list;
+    n->d.decl_specs = decl_specs;
+    n->d.stgclass = NULL;   //fine for now, should replicate symtab soon.
+                            //whatever
 
-    ast_node *current_node = n->var.attr_list;
-
-    while(current_node != NULL)
-    {
-        switch(current_node->list.value->op_type)
-        {
-            case TYPEDEF: case EXTERN: case STATIC: case AUTO: case REGISTER:
-                if(current_node->list.next != NULL)
-                {
-                    STDERR_F("Multiple storage classes specified for %s! bailing",
-                            n->var.i->ident.value);
-                    return NULL;
-                }
-                
-                n->var.stgclass = current_node->list.value; // decouple storage
-                                                            // class from list
-                current_node->list.prev->list.next = NULL; 
-                break;
-            default:
-                break;
-        }
-        current_node = current_node->list.next;
-    }
-
-    if(verify_attr_list(n->var.attr_list) == 1)
-    {
-        STDERR_F("Failed to create %s!", n->var.i->ident.value);
-        return NULL;
-    }
     return n;
 }
-
-ast_node *ast_create_func_def(ast_node *label, ast_node *attr_list, ast_node *stmt_list)
-{
-    ast_node *n = create_node(FNDEF);
-    
-    n->fndef.label = label;
-    n->fndef.attr_list = attr_list; // same as return value
-    n->fndef.stmt_list = stmt_list;
-    return n;
-}
+//
+//ast_node *ast_create_fndef(ast_node *decl_specs, ast_node *decl_list, 
+//        ast_node *stmt_list)
+//{
+//    ast_node *n = create_node(FNDEF);
+//    
+//    n->fndef.decl_list = decl_list;
+//    n->fndef.decl_specs = decl_specs; // same as return value
+//    n->fndef.stmt_list = stmt_list;
+//    return n;
+//}

@@ -10,7 +10,7 @@ enum {
     LIST,
     POINTER,
     ARRAY,
-    VARIABLE,
+    DECLARATION,
     FNDEF
 };
 #endif

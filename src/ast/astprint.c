@@ -93,18 +93,6 @@ void astprint(ast_node *n)
             depth++;
         }
         break;
-    case VARIABLE:
-        printf("VARIABLE");
-        JUSTIFY;
-        astprint(n->var.i);
-        printf(" of stgclass ");
-        if(n->var.stgclass != NULL)
-            astprint(n->var.stgclass);
-        else
-            printf(" NONE\n");
-        printf(" and declspecs:\n");
-        astprint(n->var.attr_list);
-        break;
     case ARRAY:
         printf("ARRAY");
         JUSTIFY;
@@ -119,22 +107,22 @@ void astprint(ast_node *n)
         break;
     case FUNCTION:
         printf("FUNCTION");
-        if(n->func.label != NULL)
+        if(n->fncall.label != NULL)
         {
-            astprint(n->func.label);
+            astprint(n->fncall.label);
         }
-        if(n->func.decl_specs != NULL)
-        {
-            JUSTIFY;
-            printf("WITH DECLARATION SPECIFIERS \n");
-            astprint(n->func.decl_specs);
-        }
-        if(n->func.params_list != NULL)
+        if(n->fncall.arglist != NULL)
         {
             JUSTIFY;
-            printf("WITH PARAMETERS \n");
-            astprint(n->func.params_list);
+            printf("WITH ARGUMENTS \n");
+            astprint(n->fncall.arglist);
         }
+        break;
+    case DECLARATION:
+        STDERR("DECL?????????");
+        break;
+    case FNDEF:
+        STDERR("FNDEF UNDEFINED");
         break;
     // constant keywords -- 100j 
     case AUTO:

@@ -12,7 +12,9 @@ void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
 
     if(e != NULL)
     {
-        astprint(e->n);
+        astprint(e->declarator);
+        astprint(e->decl_specs);
+        astprint(e->stgclass);
     }
     else
     {

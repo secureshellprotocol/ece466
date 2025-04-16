@@ -11,8 +11,6 @@ extern int yydebug;
 extern symbol_scope *file;
 extern symbol_scope *current;
 
-extern enum scopes deployed_scope;
-
 // src/lexer/lexer.lex
 extern FILE *yyin;
 
@@ -29,7 +27,6 @@ int main(int argc, char *argv[])
             );
 
     current = file;
-    deployed_scope = SCOPE_FUNCTION;
 
     if( argc > 1 )
     {
