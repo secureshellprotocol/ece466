@@ -262,14 +262,15 @@ ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
 
     return n;
 }
-//
-//ast_node *ast_create_fndef(ast_node *decl_specs, ast_node *decl_list, 
-//        ast_node *stmt_list)
-//{
-//    ast_node *n = create_node(FNDEF);
-//    
-//    n->fndef.decl_list = decl_list;
-//    n->fndef.decl_specs = decl_specs; // same as return value
-//    n->fndef.stmt_list = stmt_list;
-//    return n;
-//}
+
+ast_node *ast_create_fndef(ast_node *decl_specs, ast_node *decl_list, 
+        ast_node *stmt_list)
+{
+    ast_node *n = create_node(FNDEF);
+    
+    n->fndef.decl_list = decl_list;
+    n->fndef.decl_specs = decl_specs; // same as return value
+    n->fndef.stmt_list = stmt_list;
+    
+    return n;
+}

@@ -72,8 +72,8 @@ struct ast_node_decl_t {
 };
 
 struct ast_node_fndef_t {
-    ast_node *label;
-    ast_node *attr_list;
+    ast_node *decl_list;
+    ast_node *decl_specs;
     ast_node *stmt_list;
 };
 
@@ -137,7 +137,8 @@ ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
 ast_node *ast_create_func_call(ast_node *label, ast_node *arglist);
 
 ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list);
-ast_node *ast_create_fndef(ast_node *label, ast_node *attr_list, ast_node *stmt_list);
+ast_node *ast_create_fndef(ast_node *label, ast_node *decl_list, 
+        ast_node *stmt_list);
 
 // should reallyyyy be moved to a utilities c
 int verify_decl_specs(ast_node *decl_specs);

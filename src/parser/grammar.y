@@ -127,8 +127,41 @@ extern int line_num;
 %type assignment_expression
 %type assignment_operator
 %type expression
+%type constant_expression
+%type declaration
+%type declaration_specifiers
+%type initialized_declarator_list
+%type initialized_declarator
+%type storage_class_specifier
+%type type_specifier
+%type struct_or_union_specifier
+%type struct_or_union
+%type struct_declaration_list
+%type struct_declaration
+%type specifier_qualifier_list
+%type struct_declarator_list
+%type struct_declarator
+%type type_qualifier
+%type declarator
+%type direct_declarator
+%type pointer
+%type type_qualifier
+%type type_name
+%type abstract_declarator
+%type direct_abstract_declarator
+%type direct_abstract_array
+%type ident_list
+%type statement
+%type compound_statement
+%type block_item_list
+%type block_item
+%type expression_statement
+%type translation_unit
+%type external_declaration
+%type function_definition
+%type declaration_list
 
-%start start
+%start translation_unit
 
 %%
 
@@ -368,11 +401,11 @@ expression:
             $$.n = ast_list_insert($1.n, $3.n);
           }
           ;
-
+/*
 constant_expression:
                    conditional_expression { $$ = $1; }
                    ;
-
+*/
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             STDERR("1");
@@ -382,9 +415,9 @@ declaration:
             $$.n = ast_create_decl($1.n, $2.n);
             symtab_install(current, $1.n, $2.n, yyin_name, line_num);
            }
-           //| declaration_specifiers ';' {
-           // 
-           //}
+           | declaration_specifiers ';' {   // TODO
+
+           }
            ;
 
 declaration_specifiers:
@@ -419,6 +452,7 @@ initialized_declarator_list:
 
 initialized_declarator:
                       declarator { $$ = $1; } 
+                      /*| declarator '=' initializer*/
                       ;
 
 storage_class_specifier:
@@ -472,9 +506,8 @@ type_specifier:
               }
               | struct_or_union_specifier {
                 $$ = $1;
-              }
+              } /* enum, typedef omitted */
               ;
-
 
 struct_or_union_specifier:
                          struct_or_union '{' struct_declaration_list '}'    {
@@ -545,7 +578,8 @@ struct_declarator:
                  declarator {
                     $$ = $1;
                  }
-                 /*skipped bitmasks*/
+                 /*| declarator ':' constant_expression
+                 | ':' constant_expression*/
                  ;
 
 type_qualifier:
@@ -559,15 +593,8 @@ type_qualifier:
                 $$.n = ast_create_type(VOLATILE);
               }
               ;
-    
-type_qualifier_list:
-                   type_qualifier   {
-                    $$.n = ast_list_start($1.n);
-                   }
-                   | type_qualifier_list type_qualifier   {
-                    $$.n = ast_list_insert($1.n, $2.n);
-                   }
-                   ;
+
+/* skipped function specifiers */
 
 declarator:
           direct_declarator {
@@ -600,8 +627,39 @@ direct_declarator:
                     $$.n = ast_list_start(
                         ast_create_func_call($1.n, NULL)
                     );
-                 }
+                 }  /* skipped parameter lists */
                  ;
+
+pointer:
+       '*' { 
+        $$.n = ast_list_start(ast_create_ptr(NULL, NULL));
+       }
+       | '*' type_qualifier_list  {
+        $$.n = ast_list_merge($2.n, 
+            ast_list_start(ast_create_ptr(NULL, NULL)));
+       }
+       | '*' pointer {
+        $$.n = ast_list_merge($2.n, 
+            ast_list_start(ast_create_ptr(NULL, NULL)));
+       }
+       | '*' type_qualifier_list pointer  {
+        $$.n = ast_list_merge(
+            ast_list_merge($2.n, $3.n), 
+                ast_list_start(ast_create_ptr(NULL, NULL)
+            )
+        ); 
+       }
+       ;
+
+
+type_qualifier_list:
+                   type_qualifier   {
+                    $$.n = ast_list_start($1.n);
+                   }
+                   | type_qualifier_list type_qualifier   {
+                    $$.n = ast_list_insert($1.n, $2.n);
+                   }
+                   ;
 
 type_name:
          specifier_qualifier_list   {
@@ -664,27 +722,9 @@ ident_list:
           }
           ;
 
-pointer:
-       '*' { 
-        $$.n = ast_list_start(ast_create_ptr(NULL, NULL));
-       }
-       | '*' type_qualifier_list  {
-        $$.n = ast_list_merge($2.n, 
-            ast_list_start(ast_create_ptr(NULL, NULL)));
-       }
-       | '*' pointer {
-        $$.n = ast_list_merge($2.n, 
-            ast_list_start(ast_create_ptr(NULL, NULL)));
-       }
-       | '*' type_qualifier_list pointer  {
-        $$.n = ast_list_merge(
-            ast_list_merge($2.n, $3.n), 
-                ast_list_start(ast_create_ptr(NULL, NULL)
-            )
-        ); 
-       }
-       ;
+/* skipped typedef names */
 
+/* skipped initializers */
 
 statement:
          expression_statement {$$ = $1;}
@@ -719,15 +759,20 @@ block_item:
           }
           ;
 
-
 expression_statement:
-                    expression ';'  { 
-                        $$ = $1; 
-                    }
-                    | ';'   { 
+                    ';'   { 
                         $$.n = NULL;  
                     }
+                    | expression ';'  { 
+                        $$.n = $1.n; 
+                    }
                     ;
+
+    /* start */
+translation_unit:
+                external_declaration
+                | translation_unit external_declaration
+                ;
 
 external_declaration:
                     function_definition { $$ = $1; }
@@ -736,14 +781,16 @@ external_declaration:
 
 function_definition:
                    declaration_specifiers declarator {
-                    ENTER_SCOPE(SCOPE_FUNCTION);
-                   } compound_statement    {
-                    EXIT_SCOPE();
                     symtab_install(current, $1.n, 
                         ast_list_start($2.n),       // expecting list of lists
                     yyin_name, line_num);
+                    ENTER_SCOPE(SCOPE_FUNCTION);
+                   } compound_statement    {
+                    EXIT_SCOPE();
+                    $$.n = ast_create_fndef($1.n, $2.n, $3.n);
                    }
                    ;
+/*
 declaration_list:
                 declaration {
                     $$.n = ast_list_start($1.n);
@@ -752,27 +799,9 @@ declaration_list:
                     $$.n = ast_list_insert($1.n, $2.n);
                 }
                 ;
-
-start:
-     external_declaration
-     | start external_declaration
-     ;
-
-%%
-/*
-int main(int argc, char* argv[])
-{
-    file = symtab_create(NULL, SCOPE_GLOBAL, yyin_name, 1);
-    current = file;
-    if(argc>1)
-    {
-        yyin = fopen(argv[1], "r");
-    }
-    yydebug=0;
-
-    yyparse();
-}
 */
+%%
+
 void yyerror(const char *s)
 {
     STDERR("You have disturbed me almost to the point of \
