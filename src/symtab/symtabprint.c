@@ -13,29 +13,48 @@
 #define STPRINT_NNL(fmt) \
     fprintf(stderr, fmt);
 
+#define JUSTIFY \
+    fprintf(stderr, "%*c", depth+1, ' ');
+
 void declaratorprinter(ast_node *declarator)
 {
+    static int fresh_entry = 1;
+    static int depth;
+    
+    if(fresh_entry == 1)
+    {
+        depth = 0;
+        fresh_entry = 0;
+    }
+
     if(declarator == NULL || declarator->list.value->op_type == IDENT) 
-        return;
+    {
+         fresh_entry = 1;
+         return;
+    }
     
     declaratorprinter(declarator->list.next);
+    
+    depth++;
+
     switch(declarator->list.value->op_type)
     {
         case POINTER:
             STPRINT("pointer to");
-            return;
+            break;
         case ARRAY:
             STPRINT("array of");    // size?
-            return;
+            break;
         case FUNCTION:
             STPRINT("function of"); // with??
-            return;
+            break;
         default:
             STDERR_F("encoundered bad vardable %d", 
-                    declarator->list.value->op_type);
+                     declarator->list.value->op_type);
             astprint(declarator->list.value);
-            return;
+            break;
     }
+    JUSTIFY;
 }
 
 void declspecsprinter(ast_node *decl_specs)
