@@ -4,8 +4,102 @@
 #include <parser/op.h>
 #include <symtab/symtab.h>
 
-#define STPRINT(fmt, ...) \
+#define STPRINT_F(fmt, ...) \
     fprintf(stderr, fmt "\n", __VA_ARGS__);
+
+#define STPRINT(fmt) \
+    fprintf(stderr, fmt "\n");
+
+#define STPRINT_NNL(fmt) \
+    fprintf(stderr, fmt);
+
+void declaratorprinter(ast_node *declarator)
+{
+    if(declarator == NULL || declarator->list.value->op_type == IDENT) 
+        return;
+    
+    declaratorprinter(declarator->list.next);
+    switch(declarator->list.value->op_type)
+    {
+        case POINTER:
+            STPRINT("pointer to");
+            return;
+        case ARRAY:
+            STPRINT("array of");    // size?
+            return;
+        case FUNCTION:
+            STPRINT("function of"); // with??
+            return;
+        default:
+            STDERR_F("encoundered bad vardable %d", 
+                    declarator->list.value->op_type);
+            astprint(declarator->list.value);
+            return;
+    }
+}
+
+void declspecsprinter(ast_node *decl_specs)
+{
+    ast_node *i = decl_specs;
+    while(i != NULL)
+    {
+        switch(i->list.value->op_type)
+        {
+            case VOID:
+                STPRINT_NNL("void");
+                break;
+            case CHAR:
+                STPRINT_NNL("char");
+                break;
+            case SHORT:
+                STPRINT_NNL("short");
+                break;
+            case INT:
+                STPRINT_NNL("int");
+                break;
+            case LONG:
+                STPRINT_NNL("long");
+                break;
+            case FLOAT:
+                STPRINT_NNL("float");
+                break;
+            case DOUBLE:
+                STPRINT_NNL("double");
+                break;
+            case SIGNED:
+                STPRINT_NNL("signed");
+                break;
+            case UNSIGNED:
+                STPRINT_NNL("unsigned");
+                break;
+            case BOOL:
+                STPRINT_NNL("bool");    // char under the hood ... 
+                break;
+            case STRUCT:
+                STPRINT_NNL("struct");
+                break;
+            case UNION:
+                STPRINT_NNL("union");
+                break;
+            case CONST:
+                STPRINT_NNL("const");
+                break;
+            case RESTRICT:
+                STPRINT_NNL("restrict");
+                break;
+            case VOLATILE:
+                STPRINT_NNL("volatile");
+                break;
+            default:
+                STPRINT_NNL("undefined");
+                break;
+        }
+        STPRINT_NNL(" ");
+        i = i->list.next;
+    }
+    STPRINT("");
+    return;
+}
 
 void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
 {
@@ -23,20 +117,18 @@ void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
                 l, scopedecode(scope->scope), nsdecode(ns));
     }
 
-    STPRINT("%s is defined at %s:%u [in %s scope starting at %s:%u] as a",
-            l, e->file_origin, e->line_num_origin, 
-            scopedecode(scope->scope), scope->origin_file, scope->origin_lineno);
-            // TODO: maybe refactor symtab_scope to match symtab_elem? please?
+    STPRINT_F("%s is defined at %s:%u [in %s scope starting at %s:%u] as a",
+              l, e->file_origin, e->line_num_origin, 
+              scopedecode(scope->scope), scope->origin_file, scope->origin_lineno);
+              // TODO: maybe refactor symtab_scope to match symtab_elem? please?
 
     ast_node *dvar = e->d;
-    STPRINT("%s with stgclass %s of type: ",
-            nodetypedecode(dvar), 
-            stgclassdecode(dvar->d.stgclass));
-}
-
-char *declspecsprinter(ast_node *decl_specs)
-{
-
+    STPRINT_F("%s with stgclass %s of type: ",
+              nodetypedecode(dvar), 
+              stgclassdecode(dvar->d.stgclass));
+    declaratorprinter(dvar->d.declarator);
+    declspecsprinter(dvar->d.decl_specs);
+    return;
 }
 
 char *stgclassdecode(ast_node *n)

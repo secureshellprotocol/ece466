@@ -8,14 +8,18 @@
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
 
-
+// not async safe
+// these macros are defined in
+//  include/lexer/lexer.lex.h
 int verify_decl_specs(ast_node *decl_specs)
 {
     #define ITER_ON_LIST() (decl_specs = decl_specs->list.next);
     
     static uint32_t specmask;
-    
+    static uint32_t qualmask;
+
     specmask = 0;
+    qualmask = 0;
 
     if(decl_specs == NULL) 
         goto error; // cant have an empty list
@@ -24,6 +28,7 @@ int verify_decl_specs(ast_node *decl_specs)
     {
         switch(decl_specs->list.value->op_type)
         {
+            // type specifiers
             case VOID:
                 if(IS_VOID(specmask))
                 {
@@ -96,6 +101,31 @@ int verify_decl_specs(ast_node *decl_specs)
                     goto error;
                 }
                 TAG_SET(specmask, TS_UNSIGNED);
+                break;
+            // type qualifiers -- can only have one!
+            case CONST:
+                if(specmask != 0)
+                {
+                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    goto error;
+                }
+                TAG_SET(specmask, TQ_CONST);
+                break;
+            case RESTRICT:
+                if(specmask != 0)
+                {
+                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    goto error;
+                }
+                TAG_SET(specmask, TQ_RESTRICT);
+                break;
+            case VOLATILE:
+                if(specmask != 0)
+                {
+                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    goto error;
+                }
+                TAG_SET(specmask, TQ_VOLATILE);
                 break;
             default:
                 STDERR_F("Unrecognized op type %d", 

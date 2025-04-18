@@ -1,7 +1,2 @@
-# Compilers, Cooper Union
+# cringe C compiler
 James Ryan, advised by Prof. Hakner
-
-# How to build:
-```
-make
-```

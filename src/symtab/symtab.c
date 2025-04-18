@@ -92,84 +92,6 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
     return NULL;    // no match found.
 }
 
-
-//int symtab_enter(symbol_scope *scope, char *name, enum namespaces ns, 
-//        ast_node *v, char *file_origin, unsigned int line_no_origin)
-//{ 
-//    // generate elem
-//    symtab_elem *new = calloc(1, sizeof(symtab_elem));
-//
-//    new->n = v;
-//    new->key = strdup(name);
-//    new->file_origin = strdup(file_origin);
-//    new->line_no_origin = line_no_origin;
-//
-//    return 0;
-//}
-//
-//int _symtab_inject_elem(symbol_scope *scope, enum namespaces ns, symtab_elem *e)
-//{ 
-//                
-//    if(e->n->var.stgclass == NULL)
-//    {
-//        switch(e->n->var.i->op_type)
-//        {
-//            case IDENT: // scalar
-//                switch(scope->scope)
-//                {
-//                    case SCOPE_GLOBAL:
-//                        e->n->var.stgclass = ast_create_type(EXTERN);
-//                        break;
-//                    default:
-//                        e->n->var.stgclass = ast_create_type(AUTO);
-//                        break;
-//                }
-//                break;
-//            case FUNCTION:
-//                // todo add a check to make sure a function in block scope
-//                // doesnt have a non-extern stgclass
-//                e->n->var.stgclass = ast_create_type(EXTERN);
-//                break;
-//            default:
-//                STDERR_F("stgclass check unimplemented for node type %d", 
-//                        e->n->var.i->op_type);
-//                break;
-//        }
-//    }
-//
-//    switch(ns)
-//    {
-//        case NS_LABELS:
-//            e->next = scope->labels;
-//            scope->labels = e;
-//            break;
-//        case NS_SUE:
-//            e->next = scope->sue_tags;
-//            scope->sue_tags = e;
-//            break;
-//        case NS_IDENTS:
-//            if(scope->previous == NULL)
-//            {
-//                if(e->n->var.stgclass == NULL)
-//                {
-//                    e->n->var.stgclass = ast_create_type(EXTERN);
-//                }
-//            }
-//
-//            e->next = scope->idents;
-//            scope->idents = e;
-//            break;
-//        case NS_MEMBERS:
-//            // TODO: inherit from parent
-//            STDERR("member symtables are unimplemented..");
-//            return -1;
-//        default:
-//           STDERR_F("Failed to insert into namespace %d!", ns);
-//           return -1;
-//    }
-//    return 0;
-//}
-
 // install a variable into our symbol table
 // meant to feed in from the symtab_install call
 void _symtab_install_var(symbol_scope *scope, ast_node *decl,
@@ -210,14 +132,11 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         return;
     }
 
-    new->key = strdup(ident_key->ident.value);
+    new->key = strdup(ident_key->list.value->ident.value);
+    
     if(ident_key->list.prev != NULL)                // incase of composite type
         ident_key->list.prev->list.next = NULL;     // unhook from declarator
     
-    STDERR("IDENT KEY");
-    astprint(ident_key);
-    STDERR("DONE");
-
     // inject into ident namespace
     new->next = scope->idents;
     scope->idents = new;
@@ -229,9 +148,8 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         STDERR_F("Failed to install variable %s into ident symbol table!", new->key);
         return;
     }
-    
-    STDERR("Printing confirmed variable in symtab")
-    astprint(confirm->d);
+
+    symtabprint(scope, NS_IDENTS, confirm->key);
     return;
 }
 
