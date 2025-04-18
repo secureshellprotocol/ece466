@@ -104,28 +104,28 @@ int verify_decl_specs(ast_node *decl_specs)
                 break;
             // type qualifiers -- can only have one!
             case CONST:
-                if(specmask != 0)
+                if(qualmask != 0)
                 {
-                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    STDERR_F("Some qualifier is already set! %d", qualmask);
                     goto error;
                 }
-                TAG_SET(specmask, TQ_CONST);
+                TAG_SET(qualmask, TQ_CONST);
                 break;
             case RESTRICT:
-                if(specmask != 0)
+                if(qualmask != 0)
                 {
-                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    STDERR_F("Some qualifier is already set! %d", qualmask);
                     goto error;
                 }
-                TAG_SET(specmask, TQ_RESTRICT);
+                TAG_SET(qualmask, TQ_RESTRICT);
                 break;
             case VOLATILE:
-                if(specmask != 0)
+                if(qualmask != 0)
                 {
-                    STDERR_F("Some qualifier is already set! %d", specmask);
+                    STDERR_F("Some qualifier is already set! %d", qualmask);
                     goto error;
                 }
-                TAG_SET(specmask, TQ_VOLATILE);
+                TAG_SET(qualmask, TQ_VOLATILE);
                 break;
             default:
                 STDERR_F("Unrecognized op type %d", 
