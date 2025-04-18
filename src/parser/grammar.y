@@ -127,39 +127,6 @@ extern int line_num;
 %type assignment_expression
 %type assignment_operator
 %type expression
-%type constant_expression
-%type declaration
-%type declaration_specifiers
-%type initialized_declarator_list
-%type initialized_declarator
-%type storage_class_specifier
-%type type_specifier
-%type struct_or_union_specifier
-%type struct_or_union
-%type struct_declaration_list
-%type struct_declaration
-%type specifier_qualifier_list
-%type struct_declarator_list
-%type struct_declarator
-%type type_qualifier
-%type declarator
-%type direct_declarator
-%type pointer
-%type type_qualifier
-%type type_name
-%type abstract_declarator
-%type direct_abstract_declarator
-%type direct_abstract_array
-%type ident_list
-%type statement
-%type compound_statement
-%type block_item_list
-%type block_item
-%type expression_statement
-%type translation_unit
-%type external_declaration
-%type function_definition
-%type declaration_list
 
 %start translation_unit
 
@@ -408,15 +375,14 @@ constant_expression:
 */
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            STDERR("1");
-            astprint($1.n);
-            STDERR("2");
-            astprint($2.n);
-            $$.n = ast_create_decl($1.n, $2.n);
-            symtab_install(current, $1.n, $2.n, yyin_name, line_num);
+            $$.n = ast_create_var_decl($1.n, $2.n);
+            //astprint($$.n);
+            symtab_install(current, $$.n, yyin_name, line_num);
            }
            | declaration_specifiers ';' {   // TODO
-
+            STDERR("1");
+            astprint($1.n);
+            $$ = $1;
            }
            ;
 
@@ -445,8 +411,8 @@ initialized_declarator_list:
                            initialized_declarator   { 
                             $$.n = ast_list_start($1.n); 
                            }
-                           initialized_declarator_list ',' initialized_declarator   {
-                            $$.n = ast_list_append($1.n, $2.n);
+                           | initialized_declarator_list ',' initialized_declarator   {
+                            $$.n = ast_list_insert($1.n, $3.n);
                            }
                            ;
 
@@ -781,13 +747,13 @@ external_declaration:
 
 function_definition:
                    declaration_specifiers declarator {
-                    symtab_install(current, $1.n, 
-                        ast_list_start($2.n),       // expecting list of lists
-                    yyin_name, line_num);
+                    //symtab_install(current, $1.n, 
+                    //    ast_list_start($2.n),       // expecting list of lists
+                    //yyin_name, line_num);
                     ENTER_SCOPE(SCOPE_FUNCTION);
                    } compound_statement    {
                     EXIT_SCOPE();
-                    $$.n = ast_create_fndef($1.n, $2.n, $3.n);
+                    //$$.n = ast_create_fndef($1.n, $2.n, $3.n);
                    }
                    ;
 /*

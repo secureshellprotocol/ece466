@@ -170,21 +170,35 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
 //    return 0;
 //}
 
-void _symtab_install_var(symbol_scope *scope, 
-        ast_node *stgclass, ast_node *decl_specs, ast_node *declarator,
+// install a variable into our symbol table
+// meant to feed in from the symtab_install call
+void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         char *yyin_name, unsigned int line_num)
 {
+    // clean up stgclass
+    if(decl->d.stgclass == NULL)
+    {
+        switch(scope->scope)
+        {
+            case SCOPE_GLOBAL:
+                decl->d.stgclass = ast_create_type(EXTERN);
+                break;
+            default:
+                decl->d.stgclass = ast_create_type(AUTO);
+                break;
+        }
+    }
+
     symtab_elem *new = calloc(1, sizeof(symtab_elem));
 
-    new->decl_specs = decl_specs;
-    new->declarator = declarator;
+    new->d = decl;
 
     new->file_origin = strdup(yyin_name);
     new->line_num_origin = line_num;
 
     // key off based on declarator to find our ident 'Key' - to be used to index
     // our declaraed variable in the table
-    ast_node *ident_key = declarator;
+    ast_node *ident_key = decl->d.declarator;
     while(ident_key != NULL && ident_key->list.value->op_type != IDENT)
     {
         ident_key = ident_key->list.next;
@@ -199,25 +213,10 @@ void _symtab_install_var(symbol_scope *scope,
     new->key = strdup(ident_key->ident.value);
     if(ident_key->list.prev != NULL)                // incase of composite type
         ident_key->list.prev->list.next = NULL;     // unhook from declarator
-
-    if(stgclass == NULL)
-    {
-        switch(scope->scope)
-        {
-            case SCOPE_GLOBAL:
-                stgclass = ast_create_type(EXTERN);
-                break;
-            default:
-                stgclass = ast_create_type(AUTO);
-                break;
-        }
-    }
-
-    if(verify_decl_specs(decl_specs) == 1)
-    {
-        STDERR_F("INVALID DECL SPECS FOR %s!", new->key);
-        return;
-    }
+    
+    STDERR("IDENT KEY");
+    astprint(ident_key);
+    STDERR("DONE");
 
     // inject into ident namespace
     new->next = scope->idents;
@@ -230,72 +229,46 @@ void _symtab_install_var(symbol_scope *scope,
         STDERR_F("Failed to install variable %s into ident symbol table!", new->key);
         return;
     }
-
-    symtabprint(scope, NS_IDENTS, new->key);
+    
+    STDERR("Printing confirmed variable in symtab")
+    astprint(confirm->d);
     return;
 }
 
 
-void symtab_install(symbol_scope *scope, ast_node *decl_specs, ast_node *decl_list,
+void symtab_install(symbol_scope *scope, ast_node *decl_list,
         char *yyin_name, unsigned int line_num)
 {
-    if(scope == NULL || decl_specs == NULL || decl_list == NULL)
+    if(decl_list == NULL)
     {
-        STDERR("Invalid arguments supplied!");
+        STDERR("Given a null declaration!");
         return;
     }
-
-    // retrieve stgclass
-    ast_node *stgclass = NULL;
     
-    while(1)
-    {
-        switch(decl_specs->list.value->op_type)
-        {
-            case TYPEDEF: case EXTERN: case STATIC: case AUTO: case REGISTER:
-                if(stgclass != NULL)
-                {
-                    STDERR("Multiple storage classes specified! Found");
-                    astprint(stgclass);
-                    astprint(decl_specs->list.value);
-                    STDERR(" when installing ");
-                    astprint(decl_list->list.value);
-                    return;
-                }
-                stgclass = decl_specs;
-                stgclass->list.next = NULL;
-                decl_specs = decl_specs->list.next;
-                decl_specs->list.prev = NULL;
-                break;
-            default:
-                goto stgclass_done;
-        }
-    }
-stgclass_done: // its possible for stgclass to be NULL here -- we catch that
-               // later
-
-    /*      topology of man and society
-     *
-     *  [stgclass]
-     *
-     *  [decl_specs] -- [decl_list] ---- [decl_list]
-     *                      |               |
-     *                      [ident x]       [ptr]
-     *                                      |
-     *                                      [ident x]
-     */
-
     while(decl_list != NULL)
     {
-        _symtab_install_var(
-                scope,
-                stgclass,
-                decl_specs,
-                decl_list->list.value,
-                yyin_name,
-                line_num
-                );
+        ast_node *li = decl_list->list.value;
+        switch(li->op_type)
+        {
+            case DECLARATION:   // variable
+                _symtab_install_var(
+                        scope,
+                        li,
+                        yyin_name,
+                        line_num
+                        );
+                break;
+            case FNDEF:         // function
+                STDERR("FNDEF not defined");
+                break;
+            default:
+                STDERR_F("Cannot install ast node of type %d to symtab!",
+                        li->op_type);
+                astprint(li);
+                break;
+        }
         decl_list = decl_list->list.next;
     }
 
+    return;
 }

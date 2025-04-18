@@ -84,7 +84,7 @@ void astprint(ast_node *n)
             astprint(n->ternop.right);
         break;
     case LIST:
-        printf("LIST ITEM");
+        printf("LIST ITEM\n");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
@@ -119,7 +119,25 @@ void astprint(ast_node *n)
         }
         break;
     case DECLARATION:
-        STDERR("DECL?????????");
+        printf("DECLARATION\n");
+        depth++;
+        JUSTIFY;
+        printf("STORAGE CLASS: ");
+        if(n->d.stgclass == NULL)
+        {
+            printf("NONE\n");
+        }
+        else
+        {
+            astprint(n->d.stgclass);
+        }
+        JUSTIFY;
+        printf("WITH DECLARATION SPECIFIERS:\n");
+        astprint(n->d.decl_specs);
+        JUSTIFY;
+        printf("AND DECLARATORS:\n");
+        astprint(n->d.declarator);
+        depth--;
         break;
     case FNDEF:
         STDERR("FNDEF UNDEFINED");

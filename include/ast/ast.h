@@ -66,14 +66,14 @@ struct ast_node_char_t {
 };
 
 struct ast_node_decl_t {
-    ast_node *decl_list;
     ast_node *stgclass;
     ast_node *decl_specs;
+    ast_node *declarator;
 };
 
 struct ast_node_fndef_t {
-    ast_node *decl_list;
     ast_node *decl_specs;
+    ast_node *declarator;
     ast_node *stmt_list;
 };
 
@@ -136,14 +136,12 @@ ast_node *ast_create_binop(int token, ast_node *l, ast_node *r);
 ast_node *ast_create_ternop(ast_node *l, ast_node *m, ast_node *r);
 ast_node *ast_create_func_call(ast_node *label, ast_node *arglist);
 
-ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list);
-ast_node *ast_create_fndef(ast_node *label, ast_node *decl_list, 
+ast_node *ast_create_var_decl(ast_node *decl_specs, ast_node *decl_list);
+ast_node *ast_create_fndef_decl(ast_node *decl_specs, ast_node *decl_list, 
         ast_node *stmt_list);
 
 // should reallyyyy be moved to a utilities c
 int verify_decl_specs(ast_node *decl_specs);
-
-void free_node(ast_node *n);
 
 // types.c
 ast_node *ast_create_array(ast_node *to, ast_node *size);

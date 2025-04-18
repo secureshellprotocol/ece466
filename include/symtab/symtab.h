@@ -28,9 +28,10 @@ typedef struct symtab_elem_t symtab_elem;
 typedef struct symbol_scope_t symbol_scope;
 
 typedef struct symtab_elem_t {
-    ast_node *declarator;
-    ast_node *decl_specs;
-    ast_node *stgclass;
+//    ast_node *declarator;
+//    ast_node *decl_specs;
+//    ast_node *stgclass;
+    ast_node *d;
 
     char *key;
     int complete;
@@ -79,14 +80,15 @@ int _symtab_inject_elem(symbol_scope *scope, enum namespaces ns, symtab_elem *e)
 
 // symbol table insertion front-end: just needs a variable node and scope
 void symtab_install(symbol_scope *scope, 
-        ast_node *decl_specs, ast_node *decl_list,
-        char *yyin_name, unsigned int line_num);
+        ast_node *decl_list, char *yyin_name, unsigned int line_num);
 
 // src/symtab/symtabprint.c
 
 void symtabprint(symbol_scope *scope, enum namespaces ns, char *l);
 
+char *stgclassdecode(ast_node *n);
 char *scopedecode(enum scopes scope);
-
 char *nsdecode(enum namespaces ns);
+char *nodetypedecode(ast_node *n);
+
 #endif

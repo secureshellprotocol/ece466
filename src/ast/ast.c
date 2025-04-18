@@ -18,7 +18,7 @@ int verify_decl_specs(ast_node *decl_specs)
     specmask = 0;
 
     if(decl_specs == NULL) 
-        return 1; // cant have an empty list
+        goto error; // cant have an empty list
     
     while(decl_specs != NULL)
     {
@@ -108,7 +108,7 @@ int verify_decl_specs(ast_node *decl_specs)
 
 error:
 
-    return 1;
+    return -1;
 }
 
 ast_node *create_node(int ot)
@@ -251,26 +251,121 @@ ast_node *ast_create_func_call(ast_node *label, ast_node *arglist)
 //    return n;
 //}
 
-ast_node *ast_create_decl(ast_node *decl_specs, ast_node *decl_list)
+ast_node *ast_create_var_decl(ast_node *decl_specs, ast_node *decl_list)
 {
-    ast_node *n = create_node(DECLARATION);
+    if(decl_specs == NULL)
+    {
+        STDERR("No declaration specifiers supplied!");
+        goto error;
+    }
+    if(decl_list == NULL)
+    {
+        STDERR("No declarators supplied!")
+        return NULL;
+    }
+    
+    ast_node *stgclass = NULL;
+    
+    while(1)
+    {
+        switch(decl_specs->list.value->op_type)
+        {
+            case TYPEDEF: case EXTERN: case STATIC: case AUTO: case REGISTER:
+                if(stgclass != NULL)
+                {
+                    STDERR("Multiple storage classes specified! found");
+                    astprint(stgclass);
+                    astprint(decl_specs->list.value);
+                    return NULL;
+                }
+                stgclass = decl_specs->list.value;
+                decl_specs = decl_specs->list.next;
 
-    n->d.decl_list = decl_list;
-    n->d.decl_specs = decl_specs;
-    n->d.stgclass = NULL;   //fine for now, should replicate symtab soon.
-                            //whatever
+                decl_specs->list.prev = NULL;
+                break;
+            default:
+                goto stgclass_done;
+        }
+    }
+stgclass_done:  // its possible for stgclass to be NULL -- thats caught in the
+                // symtab installation
+    
 
-    return n;
+    if(verify_decl_specs(decl_specs) == -1)
+    {
+        STDERR("Invalid declaration specifiers supplied!");
+        goto error;
+    }
+
+    /*      topology of man and society
+     *
+     *  extern int x, *y;
+     *  
+     *  |-[extern]
+     *  |
+     *  | --[int]
+     *  |
+     *  \ --[decl_list] ---- [decl_list]
+     *      |               |
+     *      [ident x]       [ptr]
+     *                      |
+     *                      [ident y]
+     *
+     * becomes
+     *  
+     *  | -[decl_x]-\
+     *  |           |-[extern]      // stgclass
+     *  |           |-[int]         // decl_specs
+     *  |           |-  \
+     *  |               | - [ident x]     // declarator
+     *  |
+     *  \ -[decl_y]-\
+     *              |-[extern]
+     *              |-[int]
+     *              |-  \
+     *                  | - [ptr]-[ident y]
+     */
+    
+    // according to society, we iterate over the list and derive our final decls
+    // in the end -- this will probably get relegated to a specific "decl" ast
+    // node. however im lazy and threw the bare min into that. yet i have time
+    // for graphics.
+
+    ast_node *final_decl_list = NULL;
+    while(decl_list != NULL)
+    {
+        ast_node *decl = create_node(DECLARATION);
+        decl->d.stgclass = stgclass;
+        
+        decl->d.decl_specs = decl_specs;
+        decl->d.declarator = decl_list->list.value; // also a list.
+    
+        if(final_decl_list == NULL)
+        {
+            final_decl_list = ast_list_start(decl);
+        }
+        else
+        {
+            final_decl_list = ast_list_insert(final_decl_list, decl);
+        }
+
+        decl_list = decl_list->list.next;
+    }
+
+    return final_decl_list;
+
+error:
+    return NULL;
 }
 
-ast_node *ast_create_fndef(ast_node *decl_specs, ast_node *decl_list, 
-        ast_node *stmt_list)
-{
-    ast_node *n = create_node(FNDEF);
-    
-    n->fndef.decl_list = decl_list;
-    n->fndef.decl_specs = decl_specs; // same as return value
-    n->fndef.stmt_list = stmt_list;
-    
-    return n;
-}
+//ast_node *ast_create_fndef_decl(ast_node *decl_specs, ast_node *decl_list, 
+//        ast_node *stmt_list)
+//{
+//    ast_node *n = create_node(FNDEF);
+//    
+//    //n->fndef.decl_list = decl;
+//    n->fndef.decl_specs = decl_specs; // same as return value
+//    n->fndef.stmt_list = stmt_list;
+//    
+//    return n;
+//}
