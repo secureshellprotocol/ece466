@@ -106,9 +106,11 @@ void astprint(ast_node *n)
         printf("POINTER\n");
         break;
     case FUNCTION:
-        printf("FUNCTION");
+        printf("FUNCTION\n");
         if(n->fncall.label != NULL)
         {
+            JUSTIFY;
+            printf("DECLARATORS:\n");
             astprint(n->fncall.label);
         }
         if(n->fncall.arglist != NULL)
@@ -140,7 +142,16 @@ void astprint(ast_node *n)
         depth--;
         break;
     case FNDEF:
-        STDERR("FNDEF UNDEFINED");
+        printf("FUNCTION DEFINITION\n");
+        depth++;
+        astprint(n->fndef.decl);
+        if(n->fndef.stmt_list != NULL)
+        {
+            JUSTIFY;
+            printf("STATEMENT LIST\n");
+            astprint(n->fndef.stmt_list);
+        }
+        depth--;
         break;
     // constant keywords -- 100j 
     case AUTO:
@@ -237,13 +248,13 @@ void astprint(ast_node *n)
         printf("UNSIGNED\n");
         break;
     case VOID:
-        printf("VOUD\n");
+        printf("VOID\n");
         break;
     case VOLATILE:
         printf("VOLATILE\n");
         break;
     case WHILE:
-        printf("WHEEL\n");
+        printf("WHILE\n");
         break;
     default:
         STDERR("If I cannot bend Heaven, I shall move Hell.");

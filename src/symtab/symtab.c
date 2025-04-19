@@ -97,34 +97,26 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
 void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         char *yyin_name, unsigned int line_num)
 {
-    // clean up stgclass
-    if(decl->d.stgclass == NULL)
-    {
-        switch(scope->scope)
-        {
-            case SCOPE_GLOBAL:
-                decl->d.stgclass = ast_create_type(EXTERN);
-                break;
-            default:
-                decl->d.stgclass = ast_create_type(AUTO);
-                break;
-        }
-    }
-
-    symtab_elem *new = calloc(1, sizeof(symtab_elem));
-
-    new->d = decl;
-
-    new->file_origin = strdup(yyin_name);
-    new->line_num_origin = line_num;
-
     // key off based on declarator to find our ident 'Key' - to be used to index
     // our declaraed variable in the table
     ast_node *ident_key = decl->d.declarator;
-    while(ident_key != NULL && ident_key->list.value->op_type != IDENT)
+    while(ident_key != NULL)    
     {
+        if(ident_key->list.value->op_type == IDENT)
+        {
+            break;
+        }
+        if(ident_key->list.value->op_type == FUNCTION)
+        {
+            // recurse into the function declarators
+            ident_key = ident_key->list.value->fncall.label;
+            continue;
+        }
+        
         ident_key = ident_key->list.next;
     }
+    
+    // make sure we have an ident
     if(ident_key == NULL)
     {
         STDERR_F("Identifier not specified! bailing from %s:%d while init'ing var",
@@ -132,10 +124,46 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         return;
     }
 
+    // clean up stgclass
+    if(decl->d.stgclass == NULL)
+    {
+        if(ident_key->list.prev != NULL && ident_key->list.prev->op_type == FUNCTION)
+        {
+            decl->d.stgclass = ast_create_type(EXTERN);
+        }
+        else
+        {
+            switch(scope->scope)
+            {
+                case SCOPE_GLOBAL:
+                    decl->d.stgclass = ast_create_type(EXTERN);
+                    break;
+                default:
+                    decl->d.stgclass = ast_create_type(AUTO);
+                    break;
+            }
+        }
+    }
+    
+    symtab_elem *new = calloc(1, sizeof(symtab_elem));
+
+    new->d = decl;
+
+    new->file_origin = strdup(yyin_name);
+    new->line_num_origin = line_num;
+
     new->key = strdup(ident_key->list.value->ident.value);
     
-    if(ident_key->list.prev != NULL)                // incase of composite type
-        ident_key->list.prev->list.next = NULL;     // unhook from declarator
+    // make sure our key isnt already in the table
+    if(symtab_lookup(scope, new->key, NS_IDENTS) != NULL)
+    {
+        STDERR_F("variable %s already exists in symtab!", new->key);
+        free(new);
+        return;
+    }
+
+//    if(ident_key->list.prev != NULL)                // incase of composite type
+//        ident_key->list.prev->list.next = NULL;     // unhook from declarator
     
     // inject into ident namespace
     new->next = scope->idents;
@@ -149,10 +177,10 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
         return;
     }
 
+    // print to user
     symtabprint(scope, NS_IDENTS, confirm->key);
     return;
 }
-
 
 void symtab_install(symbol_scope *scope, ast_node *decl_list,
         char *yyin_name, unsigned int line_num)
@@ -175,9 +203,6 @@ void symtab_install(symbol_scope *scope, ast_node *decl_list,
                         yyin_name,
                         line_num
                         );
-                break;
-            case FNDEF:         // function
-                STDERR("FNDEF not defined");
                 break;
             default:
                 STDERR_F("Cannot install ast node of type %d to symtab!",

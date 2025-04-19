@@ -21,6 +21,7 @@ enum namespaces {
 enum scopes {
     SCOPE_GLOBAL,
     SCOPE_FUNCTION,
+    SCOPE_BLOCK,
     SCOPE_SUE
 };
 
@@ -79,8 +80,8 @@ int symtab_enter(symbol_scope *, char *name, enum namespaces ns,
 int _symtab_inject_elem(symbol_scope *scope, enum namespaces ns, symtab_elem *e);
 
 // symbol table insertion front-end: just needs a variable node and scope
-void symtab_install(symbol_scope *scope, 
-        ast_node *decl_list, char *yyin_name, unsigned int line_num);
+void symtab_install(symbol_scope *scope, ast_node *decl_list, 
+        char *yyin_name, unsigned int line_num);
 
 // src/symtab/symtabprint.c
 

@@ -31,14 +31,6 @@ ast_node *ast_list_insert(ast_node *list_node, ast_node *value)
 // merge all items from donor list into list_node
 ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor)
 {
-    // CONVERT THESE TO DEBUG PRINTS LATER
-    STDERR("MERGING:");
-    astprint(list_node);
-    STDERR("\tAND");
-    astprint(list_donor);
-    STDERR("\tRES");
-    // makes our value node into the head
-
     ast_node *iter = list_node;
     while(iter->list.next != NULL)
         iter = iter->list.next;

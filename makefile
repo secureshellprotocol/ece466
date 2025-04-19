@@ -11,7 +11,7 @@ all: \
 	objtrigger obj/main.o \
 	obj/grammar.o \
 	obj/lex.yy.o obj/lex_utils.o \
-	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o \
+	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o obj/ast_utils.o \
 	obj/symtab.o obj/symtabprint.o 
 	$(CC) $(CFLAGS) obj/*.o -o $(OUTNAME)
 
@@ -50,6 +50,9 @@ obj/types.o: src/ast/types.c
 obj/ast_list.o: src/ast/ast_list.c
 	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o
 
+obj/ast_utils.o: src/ast/ast_utils.c
+	$(CC) $(CFLAGS) -c src/ast/ast_utils.c -o obj/ast_utils.o
+
 obj/astprint.o: src/ast/astprint.c
 	$(CC) $(CFLAGS) -c src/ast/astprint.c -o obj/astprint.o
 
@@ -62,7 +65,8 @@ obj/symtabprint.o: src/symtab/symtabprint.c
 # === test programs ===
 lex_standalone_obj:	objtrigger obj/grammar.o # builds w/ a debug header to inject a new main
 	$(LEX) -o src/lexer/lex.yy.c src/lexer/lexer.lex
-	$(CC) $(CFLAGS) -c src/lexer/lex.yy.c -include test/lexer/debug.h -o obj/lex.yy.o
+	$(CC) $(CFLAGS) -c src/lexer/lex.yy.c -include test/lexer/debug.h \
+		-o obj/lex.yy.o
 	$(CC) $(CFLAGS) -c src/lexer/lex_utils.c -o obj/lex_utils.o
 	$(CC) $(CFLAGS) obj/lex.yy.o obj/lex_utils.o -o lexer-debug.out
 
@@ -73,7 +77,8 @@ ast_print_test: obj/ast.o obj/astprint.o obj/lex_utils.o
 
 vector_test: obj/ast.o obj/astprint.o obj/vector.o obj/lex_utils.o
 	$(CC) $(CFLAGS) -c test/symtab/vectortester.c -o obj/vectortest.o
-	$(CC) $(CFLAGS) obj/ast.o obj/astprint.o obj/vectortest.o obj/vector.o obj/lex_utils.o \
+	$(CC) $(CFLAGS) obj/ast.o obj/astprint.o obj/vectortest.o obj/vector.o \
+		obj/lex_utils.o \
 		-o vector_test.out
 
 parser_exprtest: all 

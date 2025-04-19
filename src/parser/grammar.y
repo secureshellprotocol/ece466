@@ -376,11 +376,9 @@ constant_expression:
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             $$.n = ast_create_var_decl($1.n, $2.n);
-            //astprint($$.n);
             symtab_install(current, $$.n, yyin_name, line_num);
            }
-           | declaration_specifiers ';' {   // TODO
-            STDERR("1");
+           | declaration_specifiers ';' {
             astprint($1.n);
             $$ = $1;
            }
@@ -693,10 +691,14 @@ ident_list:
 /* skipped initializers */
 
 statement:
-         expression_statement {$$ = $1;}
-         | compound_statement {$$ = $1;}
+         expression_statement { $$ = $1; }
+         | /*block scope*/ {
+            ENTER_SCOPE(SCOPE_BLOCK);
+         } compound_statement { 
+            $$ = $1; 
+            EXIT_SCOPE();
+         }
          ;
-
 
 compound_statement:
                   '{' block_item_list '}'   {
@@ -720,7 +722,7 @@ block_item:
           declaration   {
             $$ = $1;
           }
-          statement {
+          | statement {
             $$ = $1;
           }
           ;
@@ -747,13 +749,13 @@ external_declaration:
 
 function_definition:
                    declaration_specifiers declarator {
-                    //symtab_install(current, $1.n, 
-                    //    ast_list_start($2.n),       // expecting list of lists
-                    //yyin_name, line_num);
+                    $$.n = ast_create_var_decl($1.n, ast_list_start($2.n));
+                    symtab_install(current, $$.n, 
+                        yyin_name, line_num);
                     ENTER_SCOPE(SCOPE_FUNCTION);
                    } compound_statement    {
                     EXIT_SCOPE();
-                    //$$.n = ast_create_fndef($1.n, $2.n, $3.n);
+                    $$.n = ast_create_fndef_decl($$.n, $3.n);
                    }
                    ;
 /*

@@ -4,11 +4,11 @@
 #include <parser/op.h>
 #include <symtab/symtab.h>
 
-#define STPRINT_F(fmt, ...) \
-    fprintf(stderr, fmt "\n", __VA_ARGS__);
-
 #define STPRINT(fmt) \
     fprintf(stderr, fmt "\n");
+
+#define STPRINT_F(fmt, ...) \
+    fprintf(stderr, fmt "\n", __VA_ARGS__);
 
 #define STPRINT_NNL(fmt) \
     fprintf(stderr, fmt);
@@ -33,7 +33,14 @@ void declaratorprinter(ast_node *declarator)
          return;
     }
     
-    declaratorprinter(declarator->list.next);
+    if(declarator->list.value->op_type == FUNCTION)
+    {
+        declaratorprinter(declarator->list.value->fncall.label);
+    }
+    else
+    {
+        declaratorprinter(declarator->list.next);
+    }
     
     depth++;
 
@@ -43,13 +50,21 @@ void declaratorprinter(ast_node *declarator)
             STPRINT("pointer to");
             break;
         case ARRAY:
-            STPRINT("array of");    // size?
+            if(declarator->list.value->array.size != NULL)
+            {
+                STPRINT_F("array (size %llu)", 
+                          declarator->list.value->array.size->num.ival);
+            }
+            else
+            {
+                STPRINT("array");
+            }
             break;
         case FUNCTION:
-            STPRINT("function of"); // with??
+            STPRINT("function returning");  // what about parameters when i "get there"
             break;
         default:
-            STDERR_F("encoundered bad vardable %d", 
+            STDERR_F("encoundered bad type %d", 
                      declarator->list.value->op_type);
             astprint(declarator->list.value);
             break;
@@ -142,8 +157,7 @@ void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
               // TODO: maybe refactor symtab_scope to match symtab_elem? please?
 
     ast_node *dvar = e->d;
-    STPRINT_F("%s with stgclass %s of type: ",
-              nodetypedecode(dvar), 
+    STPRINT_F("variable with stgclass %s of type: ", 
               stgclassdecode(dvar->d.stgclass));
     declaratorprinter(dvar->d.declarator);
     declspecsprinter(dvar->d.decl_specs);
@@ -202,6 +216,9 @@ char *scopedecode(enum scopes s)
         case SCOPE_SUE:
             strcpy(name, "struct/union member");
             return name;
+        case SCOPE_BLOCK:
+            strcpy(name, "block");
+            return name;
         default:
             strcpy(name, "UNDEFINED");
             return name;
@@ -233,22 +250,23 @@ char *nsdecode(enum namespaces ns)
     }
 }
 
-char *nodetypedecode(ast_node *n)
-{
-    static char name[32];
-    name[0] = '\0';
-
-    switch(n->op_type)
-    {
-        case DECLARATION: // variable
-            strcpy(name, "variable");
-            return name;
-        case FNDEF:
-            strcpy(name, "function");
-            return name;
-        default:
-            strcpy(name, "UNDEFINED");
-            astprint(n);
-            return name;
-    }
-}
+// nah
+//char *nodetypedecode(ast_node *n)
+//{
+//    static char name[32];
+//    name[0] = '\0';
+//
+//    switch(n->op_type)
+//    {
+//        case DECLARATION: // variable
+//            strcpy(name, "variable");
+//            return name;
+//        case FNDEF:
+//            strcpy(name, "function");
+//            return name;
+//        default:
+//            strcpy(name, "UNDEFINED");
+//            astprint(n);
+//            return name;
+//    }
+//}
