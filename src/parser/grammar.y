@@ -108,6 +108,9 @@ extern int line_num;
 %token COMPLEX
 %token IMAGINARY
 
+// shift ASAP on else
+%right ')' ELSE
+
 %type primary_expression
 %type postfix_expression
 %type unary_expression
@@ -240,7 +243,6 @@ multiplicative_expression:
                          | multiplicative_expression '/' cast_expression    {
                             $$.n = ast_create_binop('/', $1.n, $3.n);
                          }
- 
                          | multiplicative_expression '%' cast_expression    {
                             $$.n = ast_create_binop('%', $1.n, $3.n);
                          }
@@ -368,19 +370,22 @@ expression:
             $$.n = ast_list_insert($1.n, $3.n);
           }
           ;
-/*
+
 constant_expression:
                    conditional_expression { $$ = $1; }
                    ;
-*/
+
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            $$.n = ast_create_var_decl($1.n, $2.n);
-            symtab_install(current, $$.n, yyin_name, line_num);
+            //$$.n = ast_create_var_decl($1.n, $2.n);// guh
+            symtab_install(current, 
+                ast_create_var_decl($1.n, $2.n)
+            , yyin_name, line_num);
+            $$.n = NULL;
            }
            | declaration_specifiers ';' {
-            astprint($1.n);
-            $$ = $1;
+            //$$ = $1;
+            $$.n = NULL;
            }
            ;
 
@@ -473,7 +478,7 @@ type_specifier:
               } /* enum, typedef omitted */
               ;
 
-struct_or_union_specifier:
+struct_or_union_specifier:  // TODO: midrule enter into struct symtab
                          struct_or_union '{' struct_declaration_list '}'    {
                             $1.n->sue.label = NULL;
                             //symtab_install_list($1.n->sue.symtab, $3.n);
@@ -492,7 +497,7 @@ struct_or_union_specifier:
 
 struct_or_union:
                STRUCT   {
-                $$.n = ast_create_type(STRUCT);
+                $$.n = ast_create_type(STRUCT); // contains a sue symtab
                }
                | UNION  {
                 $$.n = ast_create_type(UNION);
@@ -691,14 +696,39 @@ ident_list:
 /* skipped initializers */
 
 statement:
-         expression_statement { $$ = $1; }
+         labeled_statement  { $$ = $1; }
+         | expression_statement { $$ = $1; }
          | /*block scope*/ {
             ENTER_SCOPE(SCOPE_BLOCK);
          } compound_statement { 
             $$ = $1; 
             EXIT_SCOPE();
          }
+         | selection_statement  { $$ = $1; }
+         | iteration_statement  { $$ = $1; }
+         | jump_statement   { $$ = $1; }
          ;
+
+labeled_statement:
+                 IDENT ':' statement    {   
+                    // install label into symtab --which one?
+                    $$.n = ast_create_label(ast_create_ident($1), $3.n);
+                    //symtab_install(current, $$.n,
+                    //    yyin_name, line_num);
+                 }
+                 /* below are in SWITCtch statements ONLY
+                    basically getting installed in block scope*/
+                 | CASE constant_expression ':' statement   {
+                    $$.n = ast_create_case_label($2.n, $4.n);
+                    //symtab_install(current, $$.n,
+                    //    yyin_name, line_num);
+                 }
+                 | DEFAULT ':' statement    {
+                    $$.n = ast_create_default_label($3.n);
+                    //symtab_install(current, $$.n, 
+                    //    yyin_name, line_num);
+                 }
+                 ;
 
 compound_statement:
                   '{' block_item_list '}'   {
@@ -711,10 +741,12 @@ compound_statement:
 
 block_item_list:
                block_item   {
-                $$.n = ast_list_start($1.n);
+                if($1.n != NULL)
+                    $$.n = ast_list_start($1.n);
                }
                | block_item_list block_item {
-                $$.n = ast_list_insert($1.n, $2.n);
+                if($2.n != NULL)
+                    $$.n = ast_list_insert($1.n, $2.n);
                }
                ;
 
@@ -728,13 +760,74 @@ block_item:
           ;
 
 expression_statement:
-                    ';'   { 
+                    ';' { 
                         $$.n = NULL;  
                     }
                     | expression ';'  { 
                         $$.n = $1.n; 
                     }
                     ;
+
+selection_statement:
+                   IF '(' expression ')' statement {
+                    $$.n = ast_create_if_stmt($3.n, $5.n, NULL);
+                   }
+                   | IF '(' expression ')' statement ELSE statement {
+                    $$.n = ast_create_if_stmt($3.n, $5.n, $7.n);
+                   }
+                   | SWITCH '(' expression ')' statement    {
+                    $$.n = ast_create_switch_stmt($3.n, $5.n);
+                   }
+                   ;
+
+iteration_statement:
+                   WHILE '(' expression ')' statement  {
+                    $$.n = ast_create_while_stmt($3.n, $5.n);
+                   }
+                   | DO statement WHILE '(' expression ')' ';'  {
+                    $$.n = ast_create_do_while_stmt($5.n, $2.n);
+                   }
+                   | FOR '(' for_loop_clauses ')' statement {
+                    $$.n = ast_create_for_loop(
+                        $3.n->list.value,
+                        $3.n->list.next->list.value,
+                        $3.n->list.next->list.next->list.value,
+                        $5.n
+                    );
+                   }
+                   ;    /* not supporting decls in for loop */
+
+
+for_loop_clauses:   for_loop_expr ';' for_loop_expr ';' for_loop_expr {
+                    $$.n = ast_list_start($5.n);
+                    $$.n = ast_list_insert($$.n, $3.n);
+                    $$.n = ast_list_insert($$.n, $1.n);
+                }
+                ;
+
+for_loop_expr:    /*empty*/   { $$.n = NULL; }
+       | expression { $$.n = $1.n->list.value; }
+       ;
+
+jump_statement:
+              GOTO IDENT ';'    {
+                $$.n = ast_create_goto(
+                    ast_create_ident($2)
+                );
+              }
+              | CONTINUE ';'    {
+                $$.n = ast_create_type(CONTINUE);
+              }
+              | BREAK ';'   {
+                $$.n = ast_create_type(BREAK);
+              }
+              | RETURN expression ';'   {
+                $$.n = ast_create_return($2.n);
+              }
+              | RETURN ';'  {
+                $$.n = ast_create_return(NULL);
+              }
+              ;
 
     /* start */
 translation_unit:
@@ -749,13 +842,17 @@ external_declaration:
 
 function_definition:
                    declaration_specifiers declarator {
-                    $$.n = ast_create_var_decl($1.n, ast_list_start($2.n));
-                    symtab_install(current, $$.n, 
+                    symtab_install(current, 
+                        ast_create_var_decl($1.n, ast_list_start($2.n)), 
                         yyin_name, line_num);
                     ENTER_SCOPE(SCOPE_FUNCTION);
                    } compound_statement    {
+                    STDERR("Dumping function body:");
+                    $4.n = ast_list_reverse($4.n);
+                    astprint($4.n);
                     EXIT_SCOPE();
-                    $$.n = ast_create_fndef_decl($$.n, $3.n);
+                    //$$.n = ast_create_fndef_decl($$.n, $3.n);
+                    $$.n = NULL;
                    }
                    ;
 /*

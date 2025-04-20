@@ -13,6 +13,8 @@
 #define JUSTIFY \
     printf("%*c", depth+1, ' ')
 
+extern symbol_scope *current;
+
 // selecting some root node, start to print
 void astprint(ast_node *n)
 {
@@ -26,11 +28,27 @@ void astprint(ast_node *n)
     ++depth;
 
     JUSTIFY;
-    
+   
     switch(n->op_type)
     {
     case IDENT:
-        printf("IDENT %s\n", n->ident.value);
+        {
+            symbol_scope *s = current;
+            while(s != NULL)
+            {
+                symtab_elem *e = symtab_lookup(s, n->ident.value, NS_IDENTS);
+                if(e != NULL)
+                {
+                    printf("stab_var name=%s def @ %s:%u\n", 
+                            e->key, e->file_origin, e->line_num_origin);
+                    goto lookup_done;
+                }
+                s = s->previous;
+            }
+            // couldnt find it
+            STDERR_F("Couldnt find ident %s in any scope!", n->ident.value);
+        }
+lookup_done:
         break;
     case NUMBER:
         printf("NUM (numtype=");
@@ -153,6 +171,200 @@ void astprint(ast_node *n)
         }
         depth--;
         break;
+    case IF:
+        printf("IF\n");
+        depth++; JUSTIFY;
+        printf("EXPR:\n");
+        if(n->if_s.expr != NULL)
+        {
+            astprint(n->if_s.expr);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("TRUE:\n");
+        if(n->if_s.stmt != NULL)
+        {
+            astprint(n->if_s.stmt);
+        }
+        else printf(" EMPTY\n");
+        
+        if(n->if_s.else_stmt != NULL)
+        {
+            JUSTIFY;
+            printf("ELSE\n");
+            astprint(n->if_s.else_stmt);
+        }
+
+        depth--;
+        break;
+    case SWITCH:
+        printf("SWITCH\n");
+        depth++; JUSTIFY;
+        printf("EXPR:\n");
+        if(n->switch_s.expr != NULL)
+        {
+            astprint(n->switch_s.expr);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("STMT:\n");
+        if(n->switch_s.stmt != NULL)
+        {
+            astprint(n->switch_s.stmt);
+        }
+        else printf(" EMPTY\n");
+
+        depth--;
+        break;
+    case WHILE:
+        printf("WHILE\n");
+        depth++; JUSTIFY;
+        printf("EXPR:\n");
+        if(n->while_s.expr != NULL)
+        {
+            astprint(n->while_s.expr);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("STMT:\n");
+        if(n->while_s.stmt != NULL)
+        {
+            astprint(n->while_s.stmt);
+        }
+        else printf(" EMPTY\n");
+
+        depth--;
+        break;
+    case DO:
+        printf("DO\n");
+        depth++; JUSTIFY;
+        printf("EXPR:\n");
+        if(n->do_while_s.expr != NULL)
+        {
+            astprint(n->do_while_s.expr);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("STMT:\n");
+        if(n->do_while_s.stmt != NULL)
+        {
+            astprint(n->do_while_s.stmt);
+        }
+        else printf(" EMPTY\n");
+
+        depth--;
+        break;
+    case FOR:
+        printf("FOR\n");
+        depth++; JUSTIFY;
+        printf("INIT:\n");
+        if(n->for_s.cl1 != NULL)
+        {
+            astprint(n->for_s.cl1);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("COND:\n");
+        if(n->for_s.cl2 != NULL)
+        {
+            astprint(n->for_s.cl2);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("INC:\n");
+        if(n->for_s.cl3 != NULL)
+        {
+            astprint(n->for_s.cl3);
+        }
+        else printf(" EMPTY\n");
+
+        JUSTIFY;
+        printf("BODY:\n");
+        if(n->for_s.stmt != NULL)
+        {
+            astprint(n->for_s.stmt);
+        }
+        else printf(" EMPTY\n");
+        
+        depth--;
+        break;
+    case GOTO:
+        {
+            printf("GOTO");
+            if(n->goto_s.ident != NULL)
+            {
+                printf("(%s) ",n->goto_s.ident->ident.value);
+            }
+
+            symtab_elem *e = symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS);
+            if(e == NULL)
+            {
+                printf("(DEF)");
+            }
+            printf("\n");
+
+        }
+        break;
+    case RETURN:
+        printf("RETURN");
+        if(n->return_s.ret_expr != NULL)
+        {
+            astprint(n->return_s.ret_expr);
+        }
+        break;
+    case LABEL:
+        printf("LABEL");
+        depth++;
+        JUSTIFY;
+        if(n->label_s.ident != NULL)
+        {
+            printf("(%s)", n->label_s.ident->ident.value);
+        }
+        printf(":\n");
+        if(n->label_s.stmt != NULL)
+        {
+            astprint(n->label_s.stmt);
+        }
+        depth--;
+        break;
+    case CASE:
+        printf("CASE\n");
+        depth++;
+        JUSTIFY;
+        if(n->label_s.expr != NULL)
+        {
+            printf("EXPR:\n");
+            astprint(n->label_s.expr);
+        }
+        else
+        {
+            printf("NO EXPR\n");
+        }
+        JUSTIFY;
+        if(n->label_s.stmt != NULL)
+        {
+            printf("STMT:\n");
+            astprint(n->label_s.stmt);
+        }
+        depth--;
+        break;
+    case DEFAULT:
+        printf("DEFAULT\n");
+        depth++;
+        JUSTIFY;
+        if(n->label_s.stmt != NULL)
+        {
+            printf("STATEMENT: \n");
+            astprint(n->label_s.stmt);
+        }
+        depth--;
+        break;
     // constant keywords -- 100j 
     case AUTO:
         printf("AUTO\n");
@@ -160,9 +372,9 @@ void astprint(ast_node *n)
     case BREAK:
         printf("BREAK\n");
         break;
-    case CASE:
-        printf("CASE\n");
-        break;
+//    case CASE:
+//        printf("CASE\n");
+//        break;
     case CHAR:
         printf("CHAR\n");
         break;
@@ -172,12 +384,12 @@ void astprint(ast_node *n)
     case CONTINUE:
         printf("CONTINUE\n");
         break;
-    case DEFAULT:
-        printf("DEFAULT\n");
-        break;
-    case DO:
-        printf("DO\n");
-        break;
+//    case DEFAULT:
+//        printf("DEFAULT\n");
+//        break;
+//    case DO:
+//        printf("DO\n");
+//        break;
     case DOUBLE:
         printf("DOUBLE\n");
         break;
@@ -193,15 +405,15 @@ void astprint(ast_node *n)
     case FLOAT:
         printf("FLOAT\n");
         break;
-    case FOR:
-        printf("FOR\n");
-        break;
-    case GOTO:
-        printf("GOTO\n");
-        break;
-    case IF:
-        printf("IF\n");
-        break;
+//    case FOR:
+//        printf("FOR\n");
+//        break;
+//    case GOTO:
+//        printf("GOTO\n");
+//        break;
+//    case IF:
+//        printf("IF\n");
+//        break;
     case INLINE:
         printf("INLINE\n");
         break;
@@ -217,9 +429,9 @@ void astprint(ast_node *n)
     case RESTRICT:
         printf("RESTRICT\n");
         break;
-    case RETURN:
-        printf("RETURN\n");
-        break;
+//    case RETURN:
+//        printf("RETURN\n");
+//        break;
     case SHORT:
         printf("SHORT\n");
         break;
@@ -235,9 +447,9 @@ void astprint(ast_node *n)
     case STRUCT:
         printf("STRUCT\n");
         break;
-    case SWITCH:
-        printf("SWITCH\n");
-        break;
+//    case SWITCH:
+//        printf("SWITCH\n");
+//        break;
     case TYPEDEF:
         printf("TYPEDEF\n");
         break;
@@ -253,9 +465,9 @@ void astprint(ast_node *n)
     case VOLATILE:
         printf("VOLATILE\n");
         break;
-    case WHILE:
-        printf("WHILE\n");
-        break;
+//    case WHILE:
+//        printf("WHILE\n");
+//        break;
     default:
         STDERR("If I cannot bend Heaven, I shall move Hell.");
         STDERR_F("Unexpected node type %d\n", n->op_type);

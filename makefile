@@ -11,7 +11,7 @@ all: \
 	objtrigger obj/main.o \
 	obj/grammar.o \
 	obj/lex.yy.o obj/lex_utils.o \
-	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o obj/ast_utils.o \
+	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o obj/selection.o obj/ast_utils.o \
 	obj/symtab.o obj/symtabprint.o 
 	$(CC) $(CFLAGS) obj/*.o -o $(OUTNAME)
 
@@ -46,6 +46,9 @@ obj/ast.o: src/ast/ast.c
 
 obj/types.o: src/ast/types.c
 	$(CC) $(CFLAGS) -c src/ast/types.c -o obj/types.o
+
+obj/selection.o: src/ast/selection.c
+	$(CC) $(CFLAGS) -c src/ast/selection.c -o obj/selection.o
 
 obj/ast_list.o: src/ast/ast_list.c
 	$(CC) $(CFLAGS) -c src/ast/ast_list.c -o obj/ast_list.o

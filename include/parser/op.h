@@ -11,6 +11,7 @@ enum {
     POINTER,
     ARRAY,
     DECLARATION,
-    FNDEF
+    FNDEF,
+    LABEL
 };
 #endif

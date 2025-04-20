@@ -19,17 +19,18 @@ extern int line_num;
 
 int main(int argc, char *argv[])
 {
+    // set up initial scope
     file = symtab_create(
             NULL,
             SCOPE_GLOBAL,
             yyin_name,
             1
             );
-
     current = file;
 
     if( argc > 1 )
     {
+        strcpy(yyin_name, argv[1]);
         yyin = fopen(argv[1], "r");
     }
 

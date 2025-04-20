@@ -91,6 +91,49 @@ struct ast_node_sue_t {
     struct symbol_scope_t *symtab;
 };
 
+struct ast_node_if_t {
+    ast_node *expr;
+    ast_node *stmt;
+    ast_node *else_stmt;
+};
+
+struct ast_node_switch_t {
+    ast_node *expr;
+    ast_node *stmt;
+};
+
+struct ast_node_while_t {
+    ast_node *expr;
+    ast_node *stmt;
+};
+
+struct ast_node_do_while_t {
+    ast_node *expr;
+    ast_node *stmt;
+};
+
+struct ast_node_for_t {
+    ast_node *cl1;
+    ast_node *cl2;
+    ast_node *cl3;
+    ast_node *stmt;
+};
+
+struct ast_node_goto_t {
+    ast_node *ident;
+};
+
+struct ast_node_return_t {
+    ast_node *ret_expr;
+};
+
+// shared among label, case, default
+struct ast_node_label_t {
+    ast_node *stmt;
+    ast_node *expr;
+    ast_node *ident;
+};
+
 typedef struct ast_node_t {
     int op_type;
     union {
@@ -104,7 +147,6 @@ typedef struct ast_node_t {
         struct ast_node_binop_t binop;
         struct ast_node_ternop_t ternop;
         struct ast_node_func_t fncall;
-        
 
         // types
         struct ast_node_decl_t d;
@@ -112,6 +154,16 @@ typedef struct ast_node_t {
         struct ast_node_array_t array;
         struct ast_node_ptr_t ptr;
         struct ast_node_sue_t sue;
+        
+        // statements
+        struct ast_node_if_t if_s;
+        struct ast_node_switch_t switch_s;
+        struct ast_node_while_t while_s;
+        struct ast_node_do_while_t do_while_s;
+        struct ast_node_for_t for_s;
+        struct ast_node_goto_t goto_s;
+        struct ast_node_return_t return_s;
+        struct ast_node_label_t label_s;
 
         // list of nodes
         struct ast_list_t list;
@@ -139,11 +191,29 @@ ast_node *ast_create_var_decl(ast_node *decl_specs, ast_node *decl_list);
 ast_node *ast_create_fndef_decl(ast_node *decl, ast_node *stmt_list);
 
 // ast_utils.c
+
 int verify_decl_specs(ast_node *decl_specs);
 
 // types.c
+
 ast_node *ast_create_array(ast_node *to, ast_node *size);
 ast_node *ast_create_ptr(ast_node *to, ast_node *type_quals);
+
+// selection.c
+
+ast_node *ast_create_if_stmt(
+        ast_node *expression, ast_node *stmt, ast_node *else_stmt);
+ast_node *ast_create_switch_stmt(ast_node *expression, ast_node *stmt);
+ast_node *ast_create_while_stmt(ast_node *expression, ast_node *stmt);
+ast_node *ast_create_do_while_stmt(ast_node *expression, ast_node *stmt);
+ast_node *ast_create_for_loop(
+        ast_node *cl1, ast_node *cl2, ast_node *cl3, ast_node *stmt);
+ast_node *ast_create_goto(ast_node *ident);
+ast_node *ast_create_return(ast_node *ret_expression);
+// continue, break are handled by ast_create_type
+ast_node *ast_create_label(ast_node *i, ast_node *stmt);
+ast_node *ast_create_case_label(ast_node *expr, ast_node *stmt);
+ast_node *ast_create_default_label(ast_node *stmt);
 
 // ast_list.c
 

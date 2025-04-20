@@ -20,6 +20,13 @@ ast_node *ast_list_insert(ast_node *list_node, ast_node *value)
     ast_node *next = create_node(LIST);
     next->list.value = value;
 
+    if(list_node == NULL)
+    {
+        STDERR("NULL List provided! assuming you meant to start a list.");
+        free(next);
+        return ast_list_start(value);
+    }
+
     // makes our value node into the head
     next->list.prev = list_node->list.prev;
     next->list.next = list_node;

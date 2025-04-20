@@ -182,6 +182,41 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
     return;
 }
 
+void _symtab_install_label(symbol_scope *scope, ast_node *decl,
+        char *yyin_name, unsigned int line_num)
+{
+    symtab_elem *new = calloc(1, sizeof(symtab_elem));
+    
+    new->d = NULL;  // we dont really care
+    
+    new->file_origin = strdup(yyin_name);
+    new->line_num_origin = line_num;
+    
+    new->key = strdup(decl->label_s.ident->ident.value);
+    
+    // make sure our key isnt already in the table
+    if(symtab_lookup(scope, new->key, NS_LABELS) != NULL)
+    {
+        STDERR_F("label %s already exists in symtab!", new->key);
+        free(new);
+        return;
+    }
+    
+    // inject into label namespace
+    new->next = scope->labels;
+    scope->labels = new;
+    
+    // verify we find it
+    symtab_elem *confirm;
+    if( (confirm = symtab_lookup(scope, new->key, NS_LABELS)) == NULL )
+    {
+        STDERR_F("Failed to install label %s into symbol table!", new->key);
+        return;
+    }
+ 
+    astprint(decl);
+}
+
 void symtab_install(symbol_scope *scope, ast_node *decl_list,
         char *yyin_name, unsigned int line_num)
 {
@@ -198,6 +233,14 @@ void symtab_install(symbol_scope *scope, ast_node *decl_list,
         {
             case DECLARATION:   // variable
                 _symtab_install_var(
+                        scope,
+                        li,
+                        yyin_name,
+                        line_num
+                        );
+                break;
+            case LABEL:
+                _symtab_install_label(
                         scope,
                         li,
                         yyin_name,
