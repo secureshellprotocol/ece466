@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <string.h>
 
+#include <ast/ast.h>
 #include <parser/grammar.tab.h>
 #include <symtab/symtab.h>
 

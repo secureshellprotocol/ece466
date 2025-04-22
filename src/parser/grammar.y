@@ -34,8 +34,15 @@ extern FILE *yyin;
 extern char yyin_name[4096];
 extern int line_num;
 
-// credit gk for the macro idea
-#define ENTER_SCOPE(scope) \
+// ALERT -- API CHANGE
+// ENTER SCOPE -- enter into an already existing table (ie, formed for a union
+//  or struct)
+#define ENTER_SCOPE(symtab) \
+    current = symtab
+
+// CREATE SCOPE -- make a new scope using the SCOPE_ enums in 
+//  include/symtab/symtab.h
+#define CREATE_SCOPE(scope) \
     current = symtab_create(current, scope, yyin_name, line_num)
 
 // current gets replaced with the previous scope.
@@ -379,8 +386,8 @@ declaration:
            declaration_specifiers initialized_declarator_list ';'   {
             //$$.n = ast_create_var_decl($1.n, $2.n);// guh
             symtab_install(current, 
-                ast_create_var_decl($1.n, $2.n)
-            , yyin_name, line_num);
+                ast_create_var_decl($1.n, $2.n),
+                yyin_name, line_num);
             $$.n = NULL;
            }
            | declaration_specifiers ';' {
@@ -479,43 +486,61 @@ type_specifier:
               ;
 
 struct_or_union_specifier:  // TODO: midrule enter into struct symtab
-                         struct_or_union '{' struct_declaration_list '}'    {
+                         struct_or_union {
                             $1.n->sue.label = NULL;
-                            //symtab_install_list($1.n->sue.symtab, $3.n);
+                            ENTER_SCOPE($1.n->sue.symtab);
+                         } '{' struct_declaration_list '}'    {
+                            EXIT_SCOPE();
                             $$ = $1;
                          }
-                         | struct_or_union IDENT '{' struct_declaration_list '}' {
+                         | struct_or_union IDENT {
                             $1.n->sue.label = ast_create_ident($2);
-                            //symtab_install_list($1.n->sue.symtab, $4.n);
+                            symtab_install(current, 
+                                ast_create_var_decl(
+                                    ast_list_start($1.n),
+                                    ast_list_start($2.n)
+                                ), yyin_name, line_num);
+                            ENTER_SCOPE($1.n->sue.symtab);
+                         } '{' struct_declaration_list '}' {
+                            EXIT_SCOPE();
                             $$ = $1; 
                          }
                          | struct_or_union IDENT    {   // incomplete
                             $1.n->sue.label = ast_create_ident($2);
+                            symtab_install(current,
+                                ast_create_var_decl(
+                                    ast_list_start($1.n),
+                                    ast_list_start($2.n)
+                                ), yyin_name, line_num);
                             $$ = $1; 
                          }
                          ;
 
 struct_or_union:
                STRUCT   {
-                $$.n = ast_create_type(STRUCT); // contains a sue symtab
+                $$.n = ast_create_struct(current, yyin_name, line_num);
                }
                | UNION  {
-                $$.n = ast_create_type(UNION);
+                $$.n = ast_create_union(current, yyin_name, line_num);
                }
                ;
 
 struct_declaration_list: 
                        struct_declaration   {
-                        $$.n = ast_list_start($1.n);
+                        //$$.n = ast_list_start($1.n);
                        }
                        | struct_declaration_list struct_declaration {
-                        $$.n = ast_list_insert($1.n, $2.n);
+                        //$$.n = ast_list_insert($1.n, $2.n);
                        }
                        ;
 
 struct_declaration:
                   specifier_qualifier_list struct_declarator_list ';'   {
-                    $$.n = ast_list_merge($1.n, $2.n);
+                    //$$.n = ast_list_merge($1.n, $2.n);
+                    symtab_install(current,
+                        ast_create_sue_decl($1.n, $2.n),
+                        yyin_name, line_num);
+                    $$.n = NULL;
                   }
                   ;
 
@@ -547,8 +572,6 @@ struct_declarator:
                  declarator {
                     $$ = $1;
                  }
-                 /*| declarator ':' constant_expression
-                 | ':' constant_expression*/
                  ;
 
 type_qualifier:
@@ -699,7 +722,7 @@ statement:
          labeled_statement  { $$ = $1; }
          | expression_statement { $$ = $1; }
          | /*block scope*/ {
-            ENTER_SCOPE(SCOPE_BLOCK);
+            CREATE_SCOPE(SCOPE_BLOCK);
          } compound_statement { 
             $$ = $1; 
             EXIT_SCOPE();
@@ -845,7 +868,7 @@ function_definition:
                     symtab_install(current, 
                         ast_create_var_decl($1.n, ast_list_start($2.n)), 
                         yyin_name, line_num);
-                    ENTER_SCOPE(SCOPE_FUNCTION);
+                    CREATE_SCOPE(SCOPE_FUNCTION);
                    } compound_statement    {
                     STDERR("Dumping function body:");
                     $4.n = ast_list_reverse($4.n);

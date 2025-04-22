@@ -11,6 +11,7 @@ enum {
     POINTER,
     ARRAY,
     DECLARATION,
+    SUE_DECL,
     FNDEF,
     LABEL
 };

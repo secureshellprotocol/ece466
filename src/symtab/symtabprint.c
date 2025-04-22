@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include <james_utils.h>
+#include <ast/ast.h>
 #include <parser/op.h>
 #include <symtab/symtab.h>
 

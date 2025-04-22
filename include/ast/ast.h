@@ -190,6 +190,11 @@ ast_node *ast_create_func_call(ast_node *label, ast_node *arglist);
 ast_node *ast_create_var_decl(ast_node *decl_specs, ast_node *decl_list);
 ast_node *ast_create_fndef_decl(ast_node *decl, ast_node *stmt_list);
 
+ast_node *ast_create_struct(symbol_scope *previous, 
+        char *yyin_name, unsigned int line_num);
+ast_node *ast_create_union(symbol_scope *previous, 
+        char *yyin_name, unsigned int line_num);
+
 // ast_utils.c
 
 int verify_decl_specs(ast_node *decl_specs);

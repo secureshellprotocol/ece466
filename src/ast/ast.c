@@ -11,6 +11,7 @@
 ast_node *create_node(int ot)
 {
     ast_node *n = (ast_node *) calloc(1, sizeof(ast_node));
+    
     n->op_type = ot;
     
     return n;
@@ -19,13 +20,16 @@ ast_node *create_node(int ot)
 ast_node *ast_create_ident(struct yy_struct ys)
 {
     ast_node *n = create_node(IDENT);
+    
     n->ident.value = ys.s;
+    
     return n;
 }
 
 ast_node *ast_create_num(struct yy_struct ys)
 {
     ast_node *n = create_node(NUMBER);
+    
     switch(IS_FLOAT(ys.tags))
     {
     case 0: /* integer */
@@ -36,36 +40,44 @@ ast_node *ast_create_num(struct yy_struct ys)
         break;
     }
     n->num.tags = ys.tags;
+    
     return n;
 }
 
 ast_node *ast_create_constant(unsigned long long int ulld)
 {
     ast_node *n = create_node(NUMBER);
+    
     n->num.ival = ulld;
     n->num.tags = U_BIT;
+    
     return n;
 }
 
 ast_node *ast_create_string(struct yy_struct ys)
 {
     ast_node *n = create_node(STRING);
+    
     n->char_array.value = ys.s;
     n->char_array.s_len = ys.s_len;
+    
     return n;
 }
 
 ast_node *ast_create_charlit(struct yy_struct ys)
 {
     ast_node *n = create_node(CHARLIT);
+    
     n->char_array.value = ys.s;
     n->char_array.s_len = 1;
+    
     return n;
 }
 
 ast_node *ast_create_unaop(int token, ast_node *e)
 {
     ast_node *n = create_node(UNAOP);
+    
     n->unaop.token = token;
     n->unaop.expression = e;
     
@@ -79,6 +91,7 @@ ast_node *ast_create_binop(int token, ast_node *l, ast_node *r)
 
     n->binop.left = l;
     n->binop.right = r;
+    
     return n;
 }
 
@@ -90,6 +103,7 @@ ast_node *ast_create_ternop(
     n->ternop.left = l;
     n->ternop.middle = m;
     n->ternop.right = r;
+    
     return n;
 }
 
@@ -104,6 +118,7 @@ ast_node *ast_create_func_call(ast_node *label, ast_node *arglist)
     label->list.prev = n;
 
     n->fncall.arglist = arglist;
+    
     return n;
 }
 
@@ -222,4 +237,26 @@ ast_node *ast_create_fndef_decl(ast_node *decl, ast_node *stmt_list)
     n->fndef.stmt_list = stmt_list;
     
     return n;
+}
+
+static ast_node *_ast_create_sue(unsigned int op_type, symbol_scope *previous,
+        char *yyin_name, unsigned int line_num)
+{
+    ast_node *n = create_node(op_type);
+
+    n->sue.symtab = symtab_create(previous, SCOPE_SUE, yyin_name, line_num);
+    
+    return n;
+}
+
+ast_node *ast_create_struct(symbol_scope *previous, 
+        char *yyin_name, unsigned int line_num)
+{
+    return _ast_create_sue(STRUCT, previous, yyin_name, line_num);
+}
+
+ast_node *ast_create_union(symbol_scope *previous, 
+        char *yyin_name, unsigned int line_num)
+{
+    return _ast_create_sue(UNION, previous, yyin_name, line_num);
 }

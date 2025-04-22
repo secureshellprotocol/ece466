@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+typedef struct symtab_elem_t symtab_elem;
+typedef struct symbol_scope_t symbol_scope;
+
 #include <ast/ast.h>
 
 /* Symbol table is just a null-terminated linked-list of elements.
@@ -24,9 +27,6 @@ enum scopes {
     SCOPE_BLOCK,
     SCOPE_SUE
 };
-
-typedef struct symtab_elem_t symtab_elem;
-typedef struct symbol_scope_t symbol_scope;
 
 typedef struct symtab_elem_t {
 //    ast_node *declarator;

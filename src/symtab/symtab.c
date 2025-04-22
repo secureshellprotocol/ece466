@@ -20,7 +20,6 @@ symbol_scope *symtab_create(symbol_scope *p, enum scopes scope_type,
 {
     symbol_scope *s = calloc(1, sizeof(symbol_scope));
     s->scope = scope_type;
-    //s->name = strdup(name);
 
     s->origin_file = strdup(origin_file);
     s->origin_lineno = origin_lineno;
@@ -241,6 +240,14 @@ void symtab_install(symbol_scope *scope, ast_node *decl_list,
                 break;
             case LABEL:
                 _symtab_install_label(
+                        scope,
+                        li,
+                        yyin_name,
+                        line_num
+                        );
+                break;
+            case SUE_DECL:
+                _symtab_install_sue_decl(
                         scope,
                         li,
                         yyin_name,
