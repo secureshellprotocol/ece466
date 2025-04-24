@@ -246,14 +246,14 @@ void symtab_install(symbol_scope *scope, ast_node *decl_list,
                         line_num
                         );
                 break;
-            case SUE_DECL:
-                _symtab_install_sue_decl(
-                        scope,
-                        li,
-                        yyin_name,
-                        line_num
-                        );
-                break;
+//            case SUE_DECL:
+//                _symtab_install_sue_decl(
+//                        scope,
+//                        li,
+//                        yyin_name,
+//                        line_num
+//                        );
+//                break;
             default:
                 STDERR_F("Cannot install ast node of type %d to symtab!",
                         li->op_type);

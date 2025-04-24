@@ -488,9 +488,9 @@ type_specifier:
 struct_or_union_specifier:  // TODO: midrule enter into struct symtab
                          struct_or_union {
                             $1.n->sue.label = NULL;
-                            ENTER_SCOPE($1.n->sue.symtab);
+                            //ENTER_SCOPE($1.n->sue.symtab);
                          } '{' struct_declaration_list '}'    {
-                            EXIT_SCOPE();
+                            //EXIT_SCOPE();
                             $$ = $1;
                          }
                          | struct_or_union IDENT {
@@ -500,9 +500,9 @@ struct_or_union_specifier:  // TODO: midrule enter into struct symtab
                                     ast_list_start($1.n),
                                     ast_list_start($2.n)
                                 ), yyin_name, line_num);
-                            ENTER_SCOPE($1.n->sue.symtab);
+                            //ENTER_SCOPE($1.n->sue.symtab);
                          } '{' struct_declaration_list '}' {
-                            EXIT_SCOPE();
+                            //EXIT_SCOPE();
                             $$ = $1; 
                          }
                          | struct_or_union IDENT    {   // incomplete
@@ -537,9 +537,9 @@ struct_declaration_list:
 struct_declaration:
                   specifier_qualifier_list struct_declarator_list ';'   {
                     //$$.n = ast_list_merge($1.n, $2.n);
-                    symtab_install(current,
-                        ast_create_sue_decl($1.n, $2.n),
-                        yyin_name, line_num);
+                    //symtab_install(current,
+                    //    ast_create_sue_decl($1.n, $2.n),
+                    //    yyin_name, line_num);
                     $$.n = NULL;
                   }
                   ;
@@ -766,10 +766,12 @@ block_item_list:
                block_item   {
                 if($1.n != NULL)
                     $$.n = ast_list_start($1.n);
+                else $$.n = $1.n;
                }
                | block_item_list block_item {
                 if($2.n != NULL)
                     $$.n = ast_list_insert($1.n, $2.n);
+                else $$.n = $1.n;
                }
                ;
 
