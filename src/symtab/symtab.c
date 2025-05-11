@@ -36,24 +36,27 @@ symbol_scope *symtab_create(symbol_scope *p, enum scopes scope_type,
 symbol_scope *symtab_destroy(symbol_scope *s)
 {
     symbol_scope *previous = s->previous;
-    symtab_elem *ns_list[] = {
-        s->idents,
-        s->labels,
-        s->sue_tags
-    };
+    // current implementation of compound scopes breaks this.
+    // we now dont know when we dont need these anymore.
+    //
+    //symtab_elem *ns_list[] = {
+    //    s->idents,
+    //    s->labels,
+    //    s->sue_tags
+    //};
 
-    for(int i = 0; i < NUM_ELEMS(ns_list); i++)
-    {
-        symtab_elem *current = ns_list[i];
-        while(current != NULL)
-        {
-            symtab_elem *t = current;
-            current = t->next;
-            free(t);
-        }
-    }
+    //for(int i = 0; i < NUM_ELEMS(ns_list); i++)
+    //{
+    //    symtab_elem *current = ns_list[i];
+    //    while(current != NULL)
+    //    {
+    //        symtab_elem *t = current;
+    //        current = t->next;
+    //        free(t);
+    //    }
+    //}
 
-    free(s);
+    //free(s);
     return previous; 
 }
 
@@ -135,7 +138,7 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
             switch(scope->scope)
             {
                 case SCOPE_GLOBAL:
-                    decl->d.stgclass = ast_create_type(EXTERN);
+                    decl->d.stgclass = ast_create_type(IMPLICIT_EXTERN);
                     break;
                 default:
                     decl->d.stgclass = ast_create_type(AUTO);
@@ -154,15 +157,22 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
     new->key = strdup(ident_key->list.value->ident.value);
     
     // make sure our key isnt already in the table
-    if(symtab_lookup(scope, new->key, NS_IDENTS) != NULL)
+    //      permit a duplicate if we're in global scope.
+    // TODO: allow repeated function decls
+    if((scope->scope != SCOPE_GLOBAL) && (symtab_lookup(scope, new->key, NS_IDENTS) != NULL))
     {
+//        switch(decl_type)
+//        {
+//            case VARIABLE:
+//            case FUNCTION:
+//            default:
+//        }    
+
         STDERR_F("variable %s already exists in symtab!", new->key);
+        
         free(new);
         return;
     }
-
-//    if(ident_key->list.prev != NULL)                // incase of composite type
-//        ident_key->list.prev->list.next = NULL;     // unhook from declarator
     
     // inject into ident namespace
     new->next = scope->idents;
@@ -206,8 +216,7 @@ void _symtab_install_label(symbol_scope *scope, ast_node *decl,
     scope->labels = new;
     
     // verify we find it
-    symtab_elem *confirm;
-    if( (confirm = symtab_lookup(scope, new->key, NS_LABELS)) == NULL )
+    if( symtab_lookup(scope, new->key, NS_LABELS) == NULL )
     {
         STDERR_F("Failed to install label %s into symbol table!", new->key);
         return;

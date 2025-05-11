@@ -235,7 +235,16 @@ ast_node *ast_create_fndef_decl(ast_node *decl, ast_node *stmt_list)
    
     n->fndef.decl = decl;
     n->fndef.stmt_list = stmt_list;
+
+    return n;
+}
+
+ast_node *ast_create_compound_scope(symbol_scope *st)
+{
+    ast_node *n = create_node(COMPOUND_SCOPE);
     
+    n->cs.st = st;
+
     return n;
 }
 

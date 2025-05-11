@@ -18,7 +18,6 @@ ast_node *ast_list_start(ast_node *start)
 ast_node *ast_list_insert(ast_node *list_node, ast_node *value)
 {
     ast_node *next = create_node(LIST);
-    next->list.value = value;
 
     if(list_node == NULL)
     {
@@ -27,6 +26,7 @@ ast_node *ast_list_insert(ast_node *list_node, ast_node *value)
         return ast_list_start(value);
     }
 
+    next->list.value = value;
     // makes our value node into the head
     next->list.prev = list_node->list.prev;
     next->list.next = list_node;
@@ -45,9 +45,6 @@ ast_node *ast_list_merge(ast_node *list_node, ast_node *list_donor)
     iter->list.next = list_donor;
     list_donor->list.prev = iter;
     
-    astprint(list_node);
-    STDERR("DONE")
-
     return list_node;    // returns new head
 }
 

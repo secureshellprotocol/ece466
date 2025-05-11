@@ -34,11 +34,16 @@ extern FILE *yyin;
 extern char yyin_name[4096];
 extern int line_num;
 
+// basic blocks
+
+int bb_fn_num;
+//struct bb program_bb_list;
+
 // ALERT -- API CHANGE
 // ENTER SCOPE -- enter into an already existing table (ie, formed for a union
 //  or struct)
-#define ENTER_SCOPE(symtab) \
-    current = symtab
+//#define ENTER_SCOPE(symtab) \
+//    current = symtab;
 
 // CREATE SCOPE -- make a new scope using the SCOPE_ enums in 
 //  include/symtab/symtab.h
@@ -47,7 +52,7 @@ extern int line_num;
 
 // current gets replaced with the previous scope.
 #define EXIT_SCOPE() \
-    current = symtab_destroy(current)
+    current = symtab_destroy(current);
 
 %}
 
@@ -377,21 +382,19 @@ expression:
             $$.n = ast_list_insert($1.n, $3.n);
           }
           ;
-
+/*
 constant_expression:
                    conditional_expression { $$ = $1; }
                    ;
-
+*/
 declaration:
            declaration_specifiers initialized_declarator_list ';'   {
-            //$$.n = ast_create_var_decl($1.n, $2.n);// guh
             symtab_install(current, 
                 ast_create_var_decl($1.n, $2.n),
                 yyin_name, line_num);
             $$.n = NULL;
            }
            | declaration_specifiers ';' {
-            //$$ = $1;
             $$.n = NULL;
            }
            ;
@@ -433,6 +436,7 @@ initialized_declarator:
 
 storage_class_specifier:
                        TYPEDEF  {
+                        STDERR("typedef not supported! this will be tossed away");
                         $$.n = ast_create_type(TYPEDEF);
                        }
                        | EXTERN     {
@@ -480,11 +484,11 @@ type_specifier:
               | BOOL      {
                 $$.n = ast_create_type(CHAR);
               }
-              | struct_or_union_specifier {
+              /*| struct_or_union_specifier {
                 $$ = $1;
-              } /* enum, typedef omitted */
+              } */ /* enum, typedef omitted */
               ;
-
+/*
 struct_or_union_specifier:  // TODO: midrule enter into struct symtab
                          struct_or_union {
                             $1.n->sue.label = NULL;
@@ -543,7 +547,7 @@ struct_declaration:
                     $$.n = NULL;
                   }
                   ;
-
+*/
 specifier_qualifier_list:
                         type_specifier  {
                             $$.n = ast_list_start($1.n);
@@ -558,7 +562,7 @@ specifier_qualifier_list:
                             $$.n = ast_list_insert($2.n, $1.n);
                         }
                         ;
-
+/*
 struct_declarator_list:
                       struct_declarator {
                         $$.n = ast_list_start($1.n);
@@ -573,7 +577,7 @@ struct_declarator:
                     $$ = $1;
                  }
                  ;
-
+*/
 type_qualifier:
               CONST {
                 $$.n = ast_create_type(CONST);
@@ -601,7 +605,9 @@ direct_declarator:
                  IDENT  {
                     $$.n = ast_list_start(ast_create_ident($1));
                  }
-                 | '(' declarator ')'   { $$ = $2; }
+                 | '(' declarator ')'   { 
+                    $$ = $2; 
+                 }
                  | direct_declarator '[' ']'    { 
                     $$.n = ast_list_insert($1.n, ast_create_array(NULL, NULL));
                  }
@@ -721,27 +727,37 @@ ident_list:
 statement:
          labeled_statement  { $$ = $1; }
          | expression_statement { $$ = $1; }
-         | /*block scope*/ {
-            CREATE_SCOPE(SCOPE_BLOCK);
-         } compound_statement { 
-            $$ = $1; 
-            EXIT_SCOPE();
-         }
          | selection_statement  { $$ = $1; }
          | iteration_statement  { $$ = $1; }
          | jump_statement   { $$ = $1; }
+         | /*block scope*/ {
+            CREATE_SCOPE(SCOPE_BLOCK);
+            STDERR("Entering Compound statement");
+         } compound_statement {
+            // tack our scope on at the end of the list -- we knwo we're
+            // entering a compound scope for the duration of this list if we see
+            // this
+            // this feels wrong
+            $2.n = ast_list_insert($2.n,
+                ast_create_compound_scope(current->previous));
+            $2.n = ast_list_reverse($2.n);
+            $2.n = ast_list_insert($2.n,
+                ast_create_compound_scope(current));
+            EXIT_SCOPE();
+            STDERR("Compound statement done.")
+            $$.n = $2.n;    // bison bullshit -- the empty statement is $1
+         }
          ;
 
 labeled_statement:
                  IDENT ':' statement    {   
-                    // install label into symtab --which one?
                     $$.n = ast_create_label(ast_create_ident($1), $3.n);
-                    //symtab_install(current, $$.n,
-                    //    yyin_name, line_num);
+                    symtab_install(current, $$.n,
+                        yyin_name, line_num);
                  }
                  /* below are in SWITCtch statements ONLY
                     basically getting installed in block scope*/
-                 | CASE constant_expression ':' statement   {
+                 /*| CASE constant_expression ':' statement   {
                     $$.n = ast_create_case_label($2.n, $4.n);
                     //symtab_install(current, $$.n,
                     //    yyin_name, line_num);
@@ -750,12 +766,12 @@ labeled_statement:
                     $$.n = ast_create_default_label($3.n);
                     //symtab_install(current, $$.n, 
                     //    yyin_name, line_num);
-                 }
+                 }*/
                  ;
 
 compound_statement:
-                  '{' block_item_list '}'   {
-                    $$ = $2;
+                  '{' block_item_list '}'  {
+                    $$.n = $2.n;
                   }
                   | '{' '}'   {
                     $$.n = NULL;
@@ -766,7 +782,7 @@ block_item_list:
                block_item   {
                 if($1.n != NULL)
                     $$.n = ast_list_start($1.n);
-                else $$.n = $1.n;
+                else $$.n = NULL;
                }
                | block_item_list block_item {
                 if($2.n != NULL)
@@ -777,10 +793,10 @@ block_item_list:
 
 block_item:
           declaration   {
-            $$ = $1;
+            $$.n = $1.n;
           }
           | statement {
-            $$ = $1;
+            $$.n = $1.n;
           }
           ;
 
@@ -800,9 +816,9 @@ selection_statement:
                    | IF '(' expression ')' statement ELSE statement {
                     $$.n = ast_create_if_stmt($3.n, $5.n, $7.n);
                    }
-                   | SWITCH '(' expression ')' statement    {
+                   /*| SWITCH '(' expression ')' statement    {
                     $$.n = ast_create_switch_stmt($3.n, $5.n);
-                   }
+                   }*/ /* unsupported  */
                    ;
 
 iteration_statement:
@@ -831,8 +847,8 @@ for_loop_clauses:   for_loop_expr ';' for_loop_expr ';' for_loop_expr {
                 ;
 
 for_loop_expr:    /*empty*/   { $$.n = NULL; }
-       | expression { $$.n = $1.n->list.value; }
-       ;
+             | expression { $$.n = $1.n->list.value; }
+             ;
 
 jump_statement:
               GOTO IDENT ';'    {
@@ -861,23 +877,37 @@ translation_unit:
                 ;
 
 external_declaration:
-                    function_definition { $$ = $1; }
+                    function_definition { 
+                        $$ = $1;
+                        
+                        astprint($1.n);
+                        
+                        // add bb to list of blocks
+                        bb_fn_num++;
+                        //program_bb_list = gen_bb(current, $1.n, bb_fn_num);
+                    }
                     | declaration   { $$ = $1; }
                     ;
 
 function_definition:
                    declaration_specifiers declarator {
+                    $1.n = ast_create_var_decl($1.n, 
+                        ast_list_start($2.n));
                     symtab_install(current, 
-                        ast_create_var_decl($1.n, ast_list_start($2.n)), 
+                        $1.n, 
                         yyin_name, line_num);
                     CREATE_SCOPE(SCOPE_FUNCTION);
                    } compound_statement    {
-                    STDERR("Dumping function body:");
+                    
+                    $4.n = ast_list_insert($4.n,
+                        ast_create_compound_scope(current->previous));
                     $4.n = ast_list_reverse($4.n);
-                    astprint($4.n);
+                    $4.n = ast_list_insert($4.n,
+                        ast_create_compound_scope(current));
+     
                     EXIT_SCOPE();
-                    //$$.n = ast_create_fndef_decl($$.n, $3.n);
-                    $$.n = NULL;
+                    
+                    $$.n = ast_create_fndef_decl($1.n, $4.n);
                    }
                    ;
 /*
@@ -890,6 +920,7 @@ declaration_list:
                 }
                 ;
 */
+
 %%
 
 void yyerror(const char *s)

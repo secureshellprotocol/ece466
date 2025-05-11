@@ -29,9 +29,6 @@ enum scopes {
 };
 
 typedef struct symtab_elem_t {
-//    ast_node *declarator;
-//    ast_node *decl_specs;
-//    ast_node *stgclass;
     ast_node *d;
 
     char *key;
@@ -45,7 +42,6 @@ typedef struct symtab_elem_t {
 
 typedef struct symbol_scope_t {
     struct symbol_scope_t *previous;
-    //char *name;
     enum scopes scope;
 
     char *origin_file;      // where the scope starts

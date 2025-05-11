@@ -184,6 +184,9 @@ char *stgclassdecode(ast_node *n)
         case EXTERN:
             strcpy(name, "extern");
             return name;
+        case IMPLICIT_EXTERN:
+            strcpy(name, "implicit extern");
+            return name;
         case STATIC:
             strcpy(name, "static");
             return name;

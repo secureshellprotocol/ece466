@@ -1,7 +1,9 @@
 #include <stddef.h>
 
+#include <james_utils.h>
 #include <ast/ast.h>
 #include <parser/op.h>
+#include <symtab/symtab.h>
 
 ast_node *ast_create_if_stmt(
         ast_node *expression, ast_node *stmt, ast_node *else_stmt)
@@ -63,6 +65,12 @@ ast_node *ast_create_goto(ast_node *ident)
 {
     ast_node *n = create_node(GOTO);
 
+    if(ident == NULL || ident->op_type != IDENT)
+    {
+        STDERR("GOTO statement was given an invalid ident!");
+        return NULL;
+    }
+
     n->goto_s.ident = ident;
 
     return n;
@@ -75,7 +83,6 @@ ast_node *ast_create_return(ast_node *ret_expression)
     n->return_s.ret_expr = ret_expression;
 
     return n;
-
 }
 
 ast_node *ast_create_label(ast_node *i, ast_node *stmt)

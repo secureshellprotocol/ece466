@@ -13,6 +13,8 @@ enum {
     DECLARATION,
     SUE_DECL,
     FNDEF,
-    LABEL
+    LABEL,
+    COMPOUND_SCOPE,
+    IMPLICIT_EXTERN
 };
 #endif

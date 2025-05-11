@@ -15,6 +15,9 @@
 
 extern symbol_scope *current;
 
+#define ENTER_SCOPE(scope) \
+    current = scope;
+
 // selecting some root node, start to print
 void astprint(ast_node *n)
 {
@@ -28,7 +31,9 @@ void astprint(ast_node *n)
     ++depth;
 
     JUSTIFY;
-   
+
+    //printf("%d", n->op_type);
+
     switch(n->op_type)
     {
     case IDENT:
@@ -69,6 +74,10 @@ lookup_done:
         }
         printf("\n");
         break;
+    case COMPOUND_SCOPE:
+        ENTER_SCOPE(n->cs.st);
+        printf("\r");
+        break;
     case UNAOP:
         {
             char *tok_id = get_token_id(n->unaop.token);
@@ -92,17 +101,22 @@ lookup_done:
     case TERNOP:
         printf("TERNARY OP \n"); 
         
+        depth++; 
         if(n->ternop.left != NULL)
             astprint(n->ternop.left);
-         
+
+        JUSTIFY;
+        printf("TRUE:\n");
         if(n->ternop.middle != NULL)
             astprint(n->ternop.middle);
-
+        JUSTIFY;
+        printf("ELSE:\n");
         if(n->ternop.right != NULL)
             astprint(n->ternop.right);
+        depth--;
         break;
     case LIST:
-        printf("LIST ITEM\n");
+        printf("\r");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
@@ -127,8 +141,7 @@ lookup_done:
         printf("FUNCTION\n");
         if(n->fncall.label != NULL)
         {
-            JUSTIFY;
-            printf("DECLARATORS:\n");
+            //JUSTIFY;
             astprint(n->fncall.label);
         }
         if(n->fncall.arglist != NULL)
@@ -166,14 +179,14 @@ lookup_done:
         if(n->fndef.stmt_list != NULL)
         {
             JUSTIFY;
-            printf("STATEMENT LIST\n");
+            printf("Function Body\n");
             astprint(n->fndef.stmt_list);
         }
         depth--;
         break;
     case IF:
         printf("IF\n");
-        depth++; JUSTIFY;
+        JUSTIFY;
         printf("EXPR:\n");
         if(n->if_s.expr != NULL)
         {
@@ -196,11 +209,10 @@ lookup_done:
             astprint(n->if_s.else_stmt);
         }
 
-        depth--;
         break;
     case SWITCH:
         printf("SWITCH\n");
-        depth++; JUSTIFY;
+        JUSTIFY;
         printf("EXPR:\n");
         if(n->switch_s.expr != NULL)
         {
@@ -216,11 +228,10 @@ lookup_done:
         }
         else printf(" EMPTY\n");
 
-        depth--;
         break;
     case WHILE:
         printf("WHILE\n");
-        depth++; JUSTIFY;
+        JUSTIFY;
         printf("EXPR:\n");
         if(n->while_s.expr != NULL)
         {
@@ -236,11 +247,10 @@ lookup_done:
         }
         else printf(" EMPTY\n");
 
-        depth--;
         break;
     case DO:
         printf("DO\n");
-        depth++; JUSTIFY;
+        JUSTIFY;
         printf("EXPR:\n");
         if(n->do_while_s.expr != NULL)
         {
@@ -256,11 +266,10 @@ lookup_done:
         }
         else printf(" EMPTY\n");
 
-        depth--;
         break;
     case FOR:
         printf("FOR\n");
-        depth++; JUSTIFY;
+        JUSTIFY;
         printf("INIT:\n");
         if(n->for_s.cl1 != NULL)
         {
@@ -292,24 +301,20 @@ lookup_done:
         }
         else printf(" EMPTY\n");
         
-        depth--;
         break;
     case GOTO:
+        printf("GOTO");
+        if(n->goto_s.ident != NULL)
         {
-            printf("GOTO");
-            if(n->goto_s.ident != NULL)
-            {
-                printf("(%s) ",n->goto_s.ident->ident.value);
-            }
+            printf("(%s) ",n->goto_s.ident->ident.value);
+        } else { printf("(\?\?\?)"); }
 
-            symtab_elem *e = symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS);
-            if(e == NULL)
-            {
-                printf("(DEF)");
-            }
-            printf("\n");
-
+        if(symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS) == NULL)
+        {
+            printf("(DEF)");
         }
+        printf("\n");
+
         break;
     case RETURN:
         printf("RETURN");
@@ -372,9 +377,6 @@ lookup_done:
     case BREAK:
         printf("BREAK\n");
         break;
-//    case CASE:
-//        printf("CASE\n");
-//        break;
     case CHAR:
         printf("CHAR\n");
         break;
@@ -384,12 +386,6 @@ lookup_done:
     case CONTINUE:
         printf("CONTINUE\n");
         break;
-//    case DEFAULT:
-//        printf("DEFAULT\n");
-//        break;
-//    case DO:
-//        printf("DO\n");
-//        break;
     case DOUBLE:
         printf("DOUBLE\n");
         break;
@@ -402,18 +398,12 @@ lookup_done:
     case EXTERN:
         printf("EXTERN\n");
         break;
+    case IMPLICIT_EXTERN:
+        printf("EXTERN (implicit)\n");
+        break;
     case FLOAT:
         printf("FLOAT\n");
         break;
-//    case FOR:
-//        printf("FOR\n");
-//        break;
-//    case GOTO:
-//        printf("GOTO\n");
-//        break;
-//    case IF:
-//        printf("IF\n");
-//        break;
     case INLINE:
         printf("INLINE\n");
         break;
@@ -429,9 +419,6 @@ lookup_done:
     case RESTRICT:
         printf("RESTRICT\n");
         break;
-//    case RETURN:
-//        printf("RETURN\n");
-//        break;
     case SHORT:
         printf("SHORT\n");
         break;
@@ -447,9 +434,6 @@ lookup_done:
     case STRUCT:
         printf("STRUCT\n");
         break;
-//    case SWITCH:
-//        printf("SWITCH\n");
-//        break;
     case TYPEDEF:
         printf("TYPEDEF\n");
         break;
@@ -465,9 +449,6 @@ lookup_done:
     case VOLATILE:
         printf("VOLATILE\n");
         break;
-//    case WHILE:
-//        printf("WHILE\n");
-//        break;
     default:
         STDERR("If I cannot bend Heaven, I shall move Hell.");
         STDERR_F("Unexpected node type %d\n", n->op_type);

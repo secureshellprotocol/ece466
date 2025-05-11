@@ -19,6 +19,8 @@ extern FILE *yyin;
 extern char yyin_name[4096];
 extern int line_num;
 
+extern int bb_fn_num;
+
 int main(int argc, char *argv[])
 {
     // set up initial scope
@@ -37,6 +39,8 @@ int main(int argc, char *argv[])
     }
 
     yydebug = 0;
+
+    bb_fn_num = 0;
 
     yyparse();
 }

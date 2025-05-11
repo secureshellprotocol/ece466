@@ -134,6 +134,11 @@ struct ast_node_label_t {
     ast_node *ident;
 };
 
+// stores a scope to go into for compound scope.
+struct ast_node_compound_scope_t {
+    struct symbol_scope_t *st;
+};
+
 typedef struct ast_node_t {
     int op_type;
     union {
@@ -165,6 +170,9 @@ typedef struct ast_node_t {
         struct ast_node_return_t return_s;
         struct ast_node_label_t label_s;
 
+        // compound scope storage
+        struct ast_node_compound_scope_t cs;
+
         // list of nodes
         struct ast_list_t list;
     };
@@ -189,6 +197,8 @@ ast_node *ast_create_func_call(ast_node *label, ast_node *arglist);
 
 ast_node *ast_create_var_decl(ast_node *decl_specs, ast_node *decl_list);
 ast_node *ast_create_fndef_decl(ast_node *decl, ast_node *stmt_list);
+
+ast_node *ast_create_compound_scope(symbol_scope  *st);
 
 ast_node *ast_create_struct(symbol_scope *previous, 
         char *yyin_name, unsigned int line_num);
