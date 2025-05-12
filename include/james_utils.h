@@ -11,7 +11,7 @@
 #define STDERR_F(fmt, ...) \
     fprintf(stderr, "%s: " fmt "\n", __func__ , __VA_ARGS__);
 
-#define ERROR(fmt, ...) \
-    fprintf(stderr, "%s: " fmt "\n", __func__, __VA_ARGS__, strerror(errno));
+#define ERROR(fmt) \
+    fprintf(stderr, "%s: %s \n", __func__, strerror(errno));
 
 #endif

@@ -4,6 +4,7 @@
 #include <ast/ast.h>
 #include <parser/grammar.tab.h>
 #include <symtab/symtab.h>
+#include <backend/basicblocks.h>
 
 int yylex();
 void yyerror(const char *s);
@@ -19,7 +20,7 @@ extern FILE *yyin;
 extern char yyin_name[4096];
 extern int line_num;
 
-extern int bb_fn_num;
+extern struct bb_cursor cursor;
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +33,10 @@ int main(int argc, char *argv[])
             );
     current = file;
 
+    cursor.fn_num_counter = 1;
+    cursor.bb_num_counter = 1;
+    cursor.reg_count = 1;
+
     if( argc > 1 )
     {
         strcpy(yyin_name, argv[1]);
@@ -39,8 +44,6 @@ int main(int argc, char *argv[])
     }
 
     yydebug = 0;
-
-    bb_fn_num = 0;
 
     yyparse();
 }

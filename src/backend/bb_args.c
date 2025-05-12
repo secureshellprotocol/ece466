@@ -5,6 +5,8 @@
 #include <symtab/symtab.h>
 #include <backend/basicblocks.h>
 
+extern struct bb_cursor cursor;
+
 struct bb_arg *create_arg(enum args argtype)
 {
     struct bb_arg *a = calloc(1, sizeof(struct bb_arg));
@@ -15,29 +17,17 @@ struct bb_arg *create_arg(enum args argtype)
     }
 
     a->at = argtype;
+    switch(a->at)
+    {
+        case A_REG:
+            a->r.rn = cursor.reg_count;
+            cursor.reg_count++;
+            break;
+        case A_VAR: case A_IMM:
+            break;
+        default:
+            break;
+    }
 
     return a;
-}
-
-struct bb_arg *bb_arg_create_number(ast_node *number)
-{
-    if(number == NULL) {
-        STDERR("NULL VALUE PASSED");
-        goto error;
-    }
-    
-    if(number->op_type != NUMBER)
-    {
-        STDERR("This isnt a number! This is...");
-        astprint(number);
-        goto error;
-    }
-
-    struct bb_arg *a_num = create_arg(A_IMM);
-
-    a_num->i.val = number->num.ival;
-
-    return a_num;
-error:
-    return NULL;
 }

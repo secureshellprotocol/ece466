@@ -67,7 +67,7 @@ symbol_scope *symtab_destroy(symbol_scope *);
 // linearly searches for a named symbol in a specified namespace
 //  if not found, returns NULL.
 symtab_elem *symtab_lookup(symbol_scope *, char *name, int ns);
-
+int symtab_scope_lookup(symbol_scope *, char *name, int ns);
 // appends a symbol into a namespace. can provide optional attribute list
 // returns -1 on failure
 // returns 0 on success

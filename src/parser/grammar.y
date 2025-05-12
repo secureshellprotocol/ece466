@@ -14,6 +14,7 @@
 #include <james_utils.h>
 #include <ast/ast.h>
 #include <ast/types.h>
+#include <backend/basicblocks.h>
 #include <lexer/lexer.lex.h>
 #include <lexer/lex_utils.h>
 #include <parser/grammar.tab.h>
@@ -35,9 +36,7 @@ extern char yyin_name[4096];
 extern int line_num;
 
 // basic blocks
-
-int bb_fn_num;
-//struct bb program_bb_list;
+struct bb_cursor cursor;
 
 // ALERT -- API CHANGE
 // ENTER SCOPE -- enter into an already existing table (ie, formed for a union
@@ -883,8 +882,11 @@ external_declaration:
                         astprint($1.n);
                         
                         // add bb to list of blocks
-                        bb_fn_num++;
-                        //program_bb_list = gen_bb(current, $1.n, bb_fn_num);
+                        cursor.fn_num_counter++;
+                        struct bb *block = bb_create(&cursor);
+                        astprint($1.n->fndef.stmt_list);
+                        bb_gen_ir($1.n->fndef.stmt_list, block);
+                        bbprint(block);
                     }
                     | declaration   { $$ = $1; }
                     ;

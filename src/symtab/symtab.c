@@ -94,6 +94,39 @@ symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
     return NULL;    // no match found.
 }
 
+int symtab_scope_lookup(symbol_scope *scope, char *name, int ns)
+{
+    symtab_elem *e;
+    switch(ns)
+    {
+        case NS_LABELS:
+            e = scope->labels;
+            break;
+        case NS_SUE:
+            e = scope->sue_tags;
+            break;
+        case NS_IDENTS:
+            e = scope->idents;
+            break;
+        case NS_MEMBERS:
+            STDERR("member symtables are unimplemented..");
+            return -1;
+        default:
+           STDERR_F("Failed to switch into namespace %d when looking up %s!", ns, name);
+           return -1;
+    }
+        
+    while(e != NULL)
+    {
+        if(strcmp(name, e->key) == 0)
+        {
+            return scope->scope;
+        }
+        e = e->next;
+    }
+
+    return -1;    // no match found.
+}
 // install a variable into our symbol table
 // meant to feed in from the symtab_install call
 void _symtab_install_var(symbol_scope *scope, ast_node *decl,

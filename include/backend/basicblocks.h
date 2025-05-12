@@ -11,6 +11,12 @@ enum args
     A_REG
 };
 
+enum modes
+{
+    M_INDIRECT,
+    M_DIRECT
+};
+
 enum quadtypes
 {
     Q_INCOMPLETE,
@@ -78,22 +84,28 @@ struct bb_op {
 
 struct bb {
     int fn_num;
-    int num;
+    int bb_num;
 
     struct bb_op *start;
 };
 
 // reframe to bb_state
-struct bb_list 
+struct bb_cursor
 {
+    int fn_num_counter; // counts the number of functions we've encountered
+    int bb_num_counter; // countds number of bb's in current function
+                        //  resets upon entrance to new fcn
+    int reg_count;      // next available reg
+
     struct bb *head;
 };
 
 // src/backend/basicblocks.c
 
 // creates an empty basic block, of the form BB.{fn_num}.{num}
-struct bb *bb_create(int fn_num, int number);
-int bb_gen_ir(symbol_scope *s, ast_node *n, struct bb block);
+struct bb *bb_create(struct bb_cursor *cursor);
+void bb_op_append(struct bb_op *op, struct bb *block);
+struct bb_arg *bb_gen_ir(ast_node *n, struct bb *block);
 
 // src/backend/bb_args.c
 
@@ -101,10 +113,19 @@ struct bb_arg *create_arg(enum args argtype);
 
 // src/backend/bb_ops.c
 
-
+struct bb_op *bb_genop(enum quadtypes qt);
+struct bb_arg *bb_op_generate_constant(ast_node *n, struct bb *block);
+struct bb_arg *bb_op_generate_ident(ast_node *n);
+struct bb_arg *bb_op_generate_mov(struct bb_arg *src, struct bb_arg *dest, struct bb *block);
+struct bb_arg *bb_op_generate_addition(struct bb_arg *l, struct bb_arg *r, struct bb *block);
+struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
+struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 
 // src/backend/bbprint.c
 
-void bbprint(struct bb);
+void bbprint(struct bb *block);
+void bbprint_op(struct bb_op *o);
+char *genargstr(struct bb_arg *a);
+void free_if_not_null(char *s);
 
 #endif

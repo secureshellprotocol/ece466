@@ -12,7 +12,8 @@ all: \
 	obj/grammar.o \
 	obj/lex.yy.o obj/lex_utils.o \
 	obj/ast.o obj/ast_list.o obj/astprint.o obj/types.o obj/selection.o obj/ast_utils.o \
-	obj/symtab.o obj/symtabprint.o 
+	obj/symtab.o obj/symtabprint.o \
+	obj/basicblocks.o obj/bb_args.o obj/bb_ops.o obj/bbprinter.o
 	$(CC) $(CFLAGS) obj/*.o -o $(OUTNAME)
 
 .PHONY: objtrigger
@@ -64,6 +65,18 @@ obj/symtab.o: src/symtab/symtab.c
 
 obj/symtabprint.o: src/symtab/symtabprint.c
 	$(CC) $(CFLAGS) -c src/symtab/symtabprint.c -o obj/symtabprint.o
+
+obj/basicblocks.o: src/backend/basicblocks.c
+	$(CC) $(CFLAGS) -c src/backend/basicblocks.c -o obj/basicblocks.o 
+
+obj/bb_args.o: src/backend/bb_args.o
+	$(CC) $(CFLAGS) -c src/backend/bb_args.c -o obj/bb_args.o
+
+obj/bb_ops.o: src/backend/bb_ops.o
+	$(CC) $(CFLAGS) -c src/backend/bb_ops.c -o obj/bb_ops.o
+
+obj/bbprinter.o: src/backend/bbprinter.o
+	$(CC) $(CFLAGS) -c src/backend/bbprinter.c -o obj/bbprinter.o
 
 # === test programs ===
 lex_standalone_obj:	objtrigger obj/grammar.o # builds w/ a debug header to inject a new main

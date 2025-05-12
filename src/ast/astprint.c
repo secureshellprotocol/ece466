@@ -32,7 +32,7 @@ void astprint(ast_node *n)
 
     JUSTIFY;
 
-    //printf("%d", n->op_type);
+    printf("(%d) ", n->op_type);
 
     switch(n->op_type)
     {
@@ -116,7 +116,7 @@ lookup_done:
         depth--;
         break;
     case LIST:
-        printf("\r");
+        printf("L  ");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
