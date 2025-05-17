@@ -886,7 +886,10 @@ external_declaration:
                         struct bb *block = bb_create(&cursor);
                         astprint($1.n->fndef.stmt_list);
                         bb_gen_ir($1.n->fndef.stmt_list, block);
-                        bbprint(block);
+                        
+                        cursor_ingest(block);
+
+                        //bbprint(block);
                     }
                     | declaration   { $$ = $1; }
                     ;

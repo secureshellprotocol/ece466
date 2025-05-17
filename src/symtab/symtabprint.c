@@ -138,7 +138,7 @@ void declspecsprinter(ast_node *decl_specs)
 
 void symtabprint(symbol_scope *scope, enum namespaces ns, char *l)
 {
-    symtab_elem *e = symtab_lookup(scope, l, ns);
+    symtab_elem *e = symtab_lookup(scope, l, ns, -1);
 
     if(scope == NULL)
     {

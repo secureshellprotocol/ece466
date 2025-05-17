@@ -1,0 +1,108 @@
+  FUNCTION DEFINITION
+         DECLARATION
+      STORAGE CLASS:        EXTERN
+      WITH DECLARATION SPECIFIERS:
+               INT
+      AND DECLARATORS:
+               FUNCTION
+                   stab_var name=f def @ test/backend/t3.c:2
+   Function Body
+                        BINARY OP =
+       stab_var name=b def @ test/backend/t3.c:3
+       BINARY OP +
+        UNARY OP *
+         stab_var name=p def @ test/backend/t3.c:3
+        NUM (numtype=int) 1
+               BINARY OP =
+       stab_var name=v def @ test/backend/t3.c:5
+       UNARY OP *
+        stab_var name=a def @ test/backend/t3.c:5
+                       BINARY OP =
+     stab_var name=b def @ test/backend/t3.c:3
+     BINARY OP +
+      UNARY OP *
+       stab_var name=p def @ test/backend/t3.c:3
+      NUM (numtype=int) 1
+         BINARY OP =
+     stab_var name=v def @ test/backend/t3.c:5
+     UNARY OP *
+      stab_var name=a def @ test/backend/t3.c:5
+       stab_var name=p def @ test/backend/t3.c:3
+  stab_var name=a def @ test/backend/t3.c:5
+.BB.2.1
+	%2	 = LEA p
+	%1	 = LOAD %2
+	%3	 = ADD %1, 1
+	b	 = MOV %3
+	%5	 = LEA a
+	%4	 = LOAD %5
+	v	 = MOV %4
+r
+f is defined at test/backend/t3.c:2 [in global scope starting at <stdin>:1] as a
+variable with stgclass extern of type: 
+function returning
+  int 
+p is defined at test/backend/t3.c:3 [in function scope starting at test/backend/t3.c:2] as a
+variable with stgclass auto of type: 
+pointer to
+  int 
+b is defined at test/backend/t3.c:3 [in function scope starting at test/backend/t3.c:2] as a
+variable with stgclass auto of type: 
+int 
+c is defined at test/backend/t3.c:3 [in function scope starting at test/backend/t3.c:2] as a
+variable with stgclass auto of type: 
+int 
+ast_list_insert: NULL List provided! assuming you meant to start a list.
+a is defined at test/backend/t3.c:5 [in function scope starting at test/backend/t3.c:2] as a
+variable with stgclass auto of type: 
+array (size 10)
+  int 
+v is defined at test/backend/t3.c:5 [in function scope starting at test/backend/t3.c:2] as a
+variable with stgclass auto of type: 
+int 
+bb_gen_ir: Entering scope
+calculate_sizeof: Skipping:
+bb_gen_ir: Failure while entering LIST!
+calculate_sizeof: Skipping:
+bb_gen_ir: Failure while entering LIST!
+bb_gen_ir: Entering scope
+cursorprint: Printing cursor
+  FUNCTION DEFINITION
+         DECLARATION
+      STORAGE CLASS:        EXTERN
+      WITH DECLARATION SPECIFIERS:
+               INT
+      AND DECLARATORS:
+               FUNCTION
+                   stab_var name=f def @ test/backend/t3.c:2
+   Function Body
+                        BINARY OP =
+       stab_var name=b def @ test/backend/t3.c:3
+       BINARY OP +
+        UNARY OP *
+         stab_var name=p def @ test/backend/t3.c:3
+        NUM (numtype=int) 1
+               BINARY OP =
+       stab_var name=v def @ test/backend/t3.c:5
+       UNARY OP *
+        stab_var name=a def @ test/backend/t3.c:5
+                       BINARY OP =
+     stab_var name=b def @ test/backend/t3.c:3
+     BINARY OP +
+      UNARY OP *
+       stab_var name=p def @ test/backend/t3.c:3
+      NUM (numtype=int) 1
+         BINARY OP =
+     stab_var name=v def @ test/backend/t3.c:5
+     UNARY OP *
+      stab_var name=a def @ test/backend/t3.c:5
+       stab_var name=p def @ test/backend/t3.c:3
+  stab_var name=a def @ test/backend/t3.c:5
+.BB.2.1
+	%2	 = LEA p
+	%1	 = LOAD %2
+	%3	 = ADD %1, 1
+	b	 = MOV %3
+	%5	 = LEA a
+	%4	 = LOAD %5
+	v	 = MOV %4

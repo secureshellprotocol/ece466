@@ -2,6 +2,9 @@
 
 #include <james_utils.h>
 #include <ast/ast.h>
+#include <parser/grammar.tab.h>
+#include <parser/op.h>
+
 #include <lexer/lexer.lex.h>
 
 // not async safe
@@ -227,4 +230,72 @@ int verify_decl_specs(ast_node *decl_specs)
 
 error:
     return -1;
+}
+
+
+uint32_t calculate_sizeof(ast_node *d)
+{
+    if(d->op_type != DECLARATION)
+    {
+        STDERR("Not a declaration!");
+        return -1;
+    }
+
+    if(d->d.decl_specs == NULL)
+    {
+        STDERR("No decl specs found!");
+        return -1;
+    }
+
+    ast_node *spec = d->d.decl_specs->list.value;
+    uint32_t sum = 0;
+
+    if(spec != NULL)
+
+    while(spec != NULL)
+    {
+        switch(spec->op_type)
+        {  
+            case INT:
+                sum += sizeof(int);
+                break;
+            case LONG:
+                sum += sizeof(long);
+                break;
+            case SHORT:
+                sum += sizeof(short);
+                break;
+            case CHAR:
+                sum += sizeof(char);
+                break;
+            default:
+                STDERR("Skipping:")
+                astprint(spec->list.value);
+                break;
+        }
+        spec = spec->list.next;
+    }
+    
+    ast_node *decl = d->d.declarator->list.next;
+    while(decl != NULL)
+    {
+        switch(decl->list.value->op_type)
+        {
+            case ARRAY:
+                if(decl->list.value->array.size == NULL)
+                {
+                    STDERR("Provided incomplete array type!");
+                    return -1;
+                }
+                sum *= decl->list.value->array.size->num.ival;
+                break;
+            default:
+                STDERR("Skipping:");
+                astprint(decl->list.value);
+                break;
+        }
+        decl = decl->list.next;
+    }
+
+    return sum;
 }

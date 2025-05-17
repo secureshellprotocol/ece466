@@ -60,37 +60,47 @@ symbol_scope *symtab_destroy(symbol_scope *s)
     return previous; 
 }
 
-symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns)
+symtab_elem *symtab_lookup(symbol_scope *scope, char *name, int ns, int depth)
 {
     symtab_elem *e;
-    switch(ns)
-    {
-        case NS_LABELS:
-            e = scope->labels;
-            break;
-        case NS_SUE:
-            e = scope->sue_tags;
-            break;
-        case NS_IDENTS:
-            e = scope->idents;
-            break;
-        case NS_MEMBERS:
-            STDERR("member symtables are unimplemented..");
-            return NULL;
-        default:
-           STDERR_F("Failed to switch into namespace %d when looking up %s!", ns, name);
-           return NULL;
-    }
-        
-    while(e != NULL)
-    {
-        if(strcmp(name, e->key) == 0)
-        {
-            return e;
-        }
-        e = e->next;
-    }
+    symbol_scope *s = scope;
 
+    static int d = 0;
+
+    while(s != NULL && d != depth)
+    {
+        switch(ns)
+        {
+            case NS_LABELS:
+                e = s->labels;
+                break;
+            case NS_SUE:
+                e = s->sue_tags;
+                break;
+            case NS_IDENTS:
+                e = s->idents;
+                break;
+            case NS_MEMBERS:
+                STDERR("member symtables are unimplemented..");
+                return NULL;
+            default:
+               STDERR_F("Failed to switch into namespace %d when looking up %s!", ns, name);
+               return NULL;
+        }
+            
+        while(e != NULL)
+        {
+            if(strcmp(name, e->key) == 0)
+            {
+                return e;
+            }
+            e = e->next;
+        }
+        
+        // enter next scope
+        s = s->previous;
+        d++;
+    }
     return NULL;    // no match found.
 }
 
@@ -192,7 +202,7 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
     // make sure our key isnt already in the table
     //      permit a duplicate if we're in global scope.
     // TODO: allow repeated function decls
-    if((scope->scope != SCOPE_GLOBAL) && (symtab_lookup(scope, new->key, NS_IDENTS) != NULL))
+    if((scope->scope != SCOPE_GLOBAL) && (symtab_lookup(scope, new->key, NS_IDENTS, 1) != NULL))
     {
 //        switch(decl_type)
 //        {
@@ -213,7 +223,7 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
     
     // verify we find it
     symtab_elem *confirm;
-    if( (confirm = symtab_lookup(scope, new->key, NS_IDENTS)) == NULL )
+    if( (confirm = symtab_lookup(scope, new->key, NS_IDENTS, -1)) == NULL )
     {
         STDERR_F("Failed to install variable %s into ident symbol table!", new->key);
         return;
@@ -237,7 +247,7 @@ void _symtab_install_label(symbol_scope *scope, ast_node *decl,
     new->key = strdup(decl->label_s.ident->ident.value);
     
     // make sure our key isnt already in the table
-    if(symtab_lookup(scope, new->key, NS_LABELS) != NULL)
+    if(symtab_lookup(scope, new->key, NS_LABELS, 1) != NULL)
     {
         STDERR_F("label %s already exists in symtab!", new->key);
         free(new);
@@ -249,7 +259,7 @@ void _symtab_install_label(symbol_scope *scope, ast_node *decl,
     scope->labels = new;
     
     // verify we find it
-    if( symtab_lookup(scope, new->key, NS_LABELS) == NULL )
+    if( symtab_lookup(scope, new->key, NS_LABELS, 1) == NULL )
     {
         STDERR_F("Failed to install label %s into symbol table!", new->key);
         return;

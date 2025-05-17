@@ -7,9 +7,14 @@
 
 extern struct bb_cursor cursor;
 
-struct bb_arg *create_arg(enum args argtype)
+struct bb_arg *create_arg(enum args argtype, struct bb_arg *inheritor)
 {
     struct bb_arg *a = calloc(1, sizeof(struct bb_arg));
+
+    if(inheritor != NULL)
+    {
+        a->size = inheritor->size;
+    }
 
     if(a == NULL)
     {
@@ -17,6 +22,7 @@ struct bb_arg *create_arg(enum args argtype)
     }
 
     a->at = argtype;
+
     switch(a->at)
     {
         case A_REG:

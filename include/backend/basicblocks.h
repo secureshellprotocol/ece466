@@ -64,6 +64,8 @@ struct bb_arg_reg {
 struct bb_arg {
     enum args at;
     
+    uint32_t size;
+
     union
     {
         struct bb_arg_var v;
@@ -87,7 +89,14 @@ struct bb {
     int bb_num;
 
     struct bb_op *start;
+
+    struct bb *next;
 };
+
+#define CUR_MODE_DIR        0
+#define CUR_MODE_INDIR      1
+
+//#define IS_MODE_INDIR()     ((cursor.mode & CUR_MODE_INDIR))
 
 // reframe to bb_state
 struct bb_cursor
@@ -97,6 +106,8 @@ struct bb_cursor
                         //  resets upon entrance to new fcn
     int reg_count;      // next available reg
 
+//    int mode;
+
     struct bb *head;
 };
 
@@ -105,11 +116,12 @@ struct bb_cursor
 // creates an empty basic block, of the form BB.{fn_num}.{num}
 struct bb *bb_create(struct bb_cursor *cursor);
 void bb_op_append(struct bb_op *op, struct bb *block);
+void cursor_ingest(struct bb *block);
 struct bb_arg *bb_gen_ir(ast_node *n, struct bb *block);
 
 // src/backend/bb_args.c
 
-struct bb_arg *create_arg(enum args argtype);
+struct bb_arg *create_arg(enum args argtype, struct bb_arg *inheritor);
 
 // src/backend/bb_ops.c
 
@@ -117,12 +129,15 @@ struct bb_op *bb_genop(enum quadtypes qt);
 struct bb_arg *bb_op_generate_constant(ast_node *n, struct bb *block);
 struct bb_arg *bb_op_generate_ident(ast_node *n);
 struct bb_arg *bb_op_generate_mov(struct bb_arg *src, struct bb_arg *dest, struct bb *block);
+struct bb_arg *bb_op_generate_store(struct bb_arg *src, struct bb_arg *dest, struct bb *block);
 struct bb_arg *bb_op_generate_addition(struct bb_arg *l, struct bb_arg *r, struct bb *block);
 struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
+struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block);
 
 // src/backend/bbprint.c
 
+void cursorprint();
 void bbprint(struct bb *block);
 void bbprint_op(struct bb_op *o);
 char *genargstr(struct bb_arg *a);

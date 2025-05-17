@@ -6,6 +6,29 @@
 #include <symtab/symtab.h>
 #include <backend/basicblocks.h>
 
+extern struct bb_cursor cursor;
+
+void cursorprint()
+{
+    struct bb *block = cursor.head;
+    
+    STDERR("Printing cursor");
+
+    if(block == NULL)
+    {
+        STDERR("No blocks ingested!");
+        return;
+    }
+
+    while(block != NULL)
+    {
+        bbprint(block);
+        block = block->next;
+    }
+
+    return;
+}
+
 void bbprint(struct bb *block)
 {
     if(block == NULL)
@@ -59,6 +82,9 @@ void bbprint_op(struct bb_op *o)
             break;
         case Q_LEA:
             printf("%s\t = LEA %s", dest_s, src1_s);
+            break;
+        case Q_MULT:
+            printf("%s\t = MULT %s, %s", dest_s, src1_s, src2_s);
             break;
         default:
             STDERR_F("WTF??? OP: %d", o->qt);

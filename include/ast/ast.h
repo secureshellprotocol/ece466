@@ -208,6 +208,7 @@ ast_node *ast_create_union(symbol_scope *previous,
 // ast_utils.c
 
 int verify_decl_specs(ast_node *decl_specs);
+uint32_t calculate_sizeof(ast_node *d);
 
 // types.c
 

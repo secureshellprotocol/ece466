@@ -32,28 +32,22 @@ void astprint(ast_node *n)
 
     JUSTIFY;
 
-    printf("(%d) ", n->op_type);
+    //printf("(%d) ", n->op_type);
 
     switch(n->op_type)
     {
     case IDENT:
         {
-            symbol_scope *s = current;
-            while(s != NULL)
+            symtab_elem *e = symtab_lookup(current, n->ident.value, NS_IDENTS, -1);
+            if(e != NULL)
             {
-                symtab_elem *e = symtab_lookup(s, n->ident.value, NS_IDENTS);
-                if(e != NULL)
-                {
-                    printf("stab_var name=%s def @ %s:%u\n", 
-                            e->key, e->file_origin, e->line_num_origin);
-                    goto lookup_done;
-                }
-                s = s->previous;
+                printf("stab_var name=%s def @ %s:%u\n", 
+                        e->key, e->file_origin, e->line_num_origin);
+                break;
             }
             // couldnt find it
             STDERR_F("Couldnt find ident %s in any scope!", n->ident.value);
         }
-lookup_done:
         break;
     case NUMBER:
         printf("NUM (numtype=");
@@ -116,7 +110,7 @@ lookup_done:
         depth--;
         break;
     case LIST:
-        printf("L  ");
+        printf("\r");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
@@ -309,7 +303,7 @@ lookup_done:
             printf("(%s) ",n->goto_s.ident->ident.value);
         } else { printf("(\?\?\?)"); }
 
-        if(symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS) == NULL)
+        if(symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS, 1) == NULL)
         {
             printf("(DEF)");
         }
