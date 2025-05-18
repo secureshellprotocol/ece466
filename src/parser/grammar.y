@@ -36,7 +36,7 @@ extern char yyin_name[4096];
 extern int line_num;
 
 // basic blocks
-struct bb_cursor cursor;
+struct bb_cursor cursor = {0};
 
 // ALERT -- API CHANGE
 // ENTER SCOPE -- enter into an already existing table (ie, formed for a union

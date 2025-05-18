@@ -39,16 +39,22 @@ struct bb_arg *bb_op_generate_constant(ast_node *n, struct bb *block)
     // fun game: try saying this fifteen times in 60 seconds!
     num->i.val = n->num.ival;
 
+    num->size = (uint32_t) sizeof(int);
+    num->am = M_LITERAL;
+
     return num;
 }
 
-struct bb_arg *bb_op_generate_intconst(uint32_t num, struct bb *block)
+struct bb_arg *bb_op_generate_intconst(uint32_t numarg, struct bb *block)
 {
-    struct bb_arg *numarg = create_arg(A_IMM, NULL);
+    struct bb_arg *num = create_arg(A_IMM, NULL);
 
-    numarg->i.val = num;
+    num->i.val = numarg;
+    
+    num->size = sizeof(int);
+    num->am = M_LITERAL;
 
-    return numarg;
+    return num;
 }
 
 struct bb_arg *bb_op_generate_ident(ast_node *n)
@@ -58,9 +64,8 @@ struct bb_arg *bb_op_generate_ident(ast_node *n)
     i->v.ste = symtab_lookup(current, n->ident.value, NS_IDENTS, -1);
     i->v.scope = symtab_scope_lookup(current, n->ident.value, NS_IDENTS);
 
-    i->size = calculate_sizeof(i->v.ste->d);
-
-    // to be inserted
+    // size, am defined by generate_declarator
+    // should never use this outside of that fcn
 
     return i;
 }
@@ -95,66 +100,60 @@ struct bb_arg *bb_op_generate_mul(struct bb_arg *src1, struct bb_arg *src2, stru
 
     o->src1 = src1;
     o->src2 = src2;
-    o->dest = create_arg(A_REG, NULL);
+    o->dest = create_arg(A_REG, src1);
+    
+
+
+    if(ADDRTYPE(src1->am) || (ADDRTYPE(src2->am)))
+    {
+        o->dest->size = sizeof(int *);
+        o->dest->am = M_POINTER;
+        
+        if(src1->am == M_ARRAY)
+        {
+            o->dest->am = M_ARRAY;
+            o->dest->size = src1->size;
+        }
+
+        if(src2->am == M_ARRAY)
+        {
+            o->dest->am = M_ARRAY;
+            o->dest->size = src2->size;
+        }
+    }
 
     bb_op_append(o, block);
 
     return o->dest;
-
 }
 
-struct bb_arg *bb_op_generate_addition(struct bb_arg *l, struct bb_arg *r, struct bb *block)
+struct bb_arg *bb_op_generate_addition(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
 {
     struct bb_op *o = bb_genop(Q_ADD);
-
-    switch(l->at)
-    {
-        case A_VAR:
-            l = bb_op_generate_mov(l, create_arg(A_REG, l), block);
-            break;
-        default:
-            break;
-    }
     
-    //if(IS_MODE_INDIR())
-    //{
-    //    r = bb_op_generate_mul(r,
-    //            bb_op_generate_intconst(l->size, block), block
-    //            );
-    //}
-    
-//    switch(r->at)
-//    {
-//        case A_VAR:
-//            r = bb_op_generate_mov(r, create_arg(A_REG, r), block);
-//            break;
-//        default:
-//            break;
-//    }
-   
-    
-
-//    if(IS_ADDR(r->mode))
-//    {
-//        STDERR_F("POO %d", l->size);
-//
-//        r = bb_op_generate_mul(r, 
-//                bb_op_generate_intconst(l->size, block), block
-//                );
-//    }
-//    if(IS_ADDR(l->mode))
-//    {
-//        STDERR_F("POO %d", r->size);
-//
-//        l = bb_op_generate_mul(l, 
-//                bb_op_generate_intconst(r->size, block), block
-//                );
-//    }
-
-    o->src1 = l;
-    o->src2 = r;
+    o->src1 = src1;
+    o->src2 = src2;
     o->dest = create_arg(A_REG, NULL);
+    
+    // Multidim is broken if you have more than 2 dims
+    // todo never make a calculate_sizeof
+    if(ADDRTYPE(src1->am) || (ADDRTYPE(src2->am)))
+    {
+        o->dest->size = sizeof(int *);
+        o->dest->am = M_POINTER;
+        
+        if(src1->am == M_ARRAY)
+        {
+            o->dest->am = M_ARRAY;
+            o->dest->size = sizeof(int);
+        }
 
+        if(src2->am == M_ARRAY)
+        {
+            o->dest->am = M_ARRAY;
+            o->dest->size = sizeof(int);
+        }
+    }    
     bb_op_append(o, block);
 
     return o->dest;
@@ -179,8 +178,6 @@ struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, stru
     o->src1 = src1;
     o->dest = dest;
 
-    // check if we need array stuff
-
     bb_op_append(o, block);
 
     return o->dest;
@@ -201,27 +198,54 @@ struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block)
     }
 
     struct bb_arg *a;
+    STDERR_F("OPTYPE : %d", d->list.value->op_type);
     switch(d->list.value->op_type)
     {
         case ARRAY:
             a = bb_op_generate_declarators(d->list.next, block);
+            if(d->list.value->array.size == NULL)
+            {
+                STDERR("Cant have incomplete arrays!");
+                return NULL;
+            }
+
+            if(a->am == M_ARRAY) //multidim
+            {
+                a->size = d->list.value->array.size->num.ival * a->size;
+                return a;
+            }
+
+            a->size = a->size;
+            a->am = M_ARRAY;
             return bb_op_generate_lea(
                     a, create_arg(A_REG, a), block
                     );
             break;
         case POINTER:
             a = bb_op_generate_declarators(d->list.next, block);
+            if(a->am == M_ARRAY) //multidim
+                return a;
+            
+            if(a->am == M_POINTER)
+                return a;
+
+            a->am = M_POINTER;
+            a->size = sizeof(int);
             return bb_op_generate_load(
                     a, create_arg(A_REG, a), block
                     );
             break;
         case IDENT:
-            return bb_op_generate_ident(d->list.value);
+            a = bb_op_generate_ident(d->list.value);
+            a->size = sizeof(int);
+            a->am = M_LITERAL;
+            return a;
             break;
         default:
-            STDERR("Dunno what to do with this");
+            STDERR("\n\nDunno what to do with this");
             astprint(d->list.value);
             break;  
     }
+    STDERR("Some fuckery has occuured");
     return NULL;
 }

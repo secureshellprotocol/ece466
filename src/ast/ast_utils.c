@@ -232,7 +232,7 @@ error:
     return -1;
 }
 
-
+// broken
 uint32_t calculate_sizeof(ast_node *d)
 {
     if(d->op_type != DECLARATION)

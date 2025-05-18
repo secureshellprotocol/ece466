@@ -135,7 +135,6 @@ void astprint(ast_node *n)
         printf("FUNCTION\n");
         if(n->fncall.label != NULL)
         {
-            //JUSTIFY;
             astprint(n->fncall.label);
         }
         if(n->fncall.arglist != NULL)
@@ -144,6 +143,7 @@ void astprint(ast_node *n)
             printf("WITH ARGUMENTS \n");
             astprint(n->fncall.arglist);
         }
+        printf("DONE WITH FUNCTION\n\n");
         break;
     case DECLARATION:
         printf("DECLARATION\n");

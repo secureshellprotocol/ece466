@@ -14,6 +14,7 @@ struct bb_arg *create_arg(enum args argtype, struct bb_arg *inheritor)
     if(inheritor != NULL)
     {
         a->size = inheritor->size;
+        a->am = inheritor->am;
     }
 
     if(a == NULL)

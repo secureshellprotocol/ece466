@@ -86,6 +86,9 @@ void bbprint_op(struct bb_op *o)
         case Q_MULT:
             printf("%s\t = MULT %s, %s", dest_s, src1_s, src2_s);
             break;
+        case Q_STORE:
+            printf("\t   STORE %s, %s", src1_s, dest_s);
+            break;
         default:
             STDERR_F("WTF??? OP: %d", o->qt);
     }
@@ -101,7 +104,7 @@ void bbprint_op(struct bb_op *o)
 
 char *genargstr(struct bb_arg *a)
 {
-    char* str = calloc(16,  sizeof(char)); 
+    char* str = calloc(128,  sizeof(char)); 
 
     if(a == NULL)
     {
@@ -113,10 +116,12 @@ char *genargstr(struct bb_arg *a)
     switch(a->at)
     {
         case A_IMM:
-            snprintf(str, 16, "%lld", a->i.val);
+
+
+            snprintf(str, 128, "%lld", a->i.val);
             break;
         case A_REG:
-            snprintf(str, 16, "%%%lld", a->r.rn);
+            snprintf(str, 128, "%%%lld", a->r.rn);
             break;
         case A_VAR:
             strncpy(str, a->v.ste->key, 16);
@@ -124,12 +129,20 @@ char *genargstr(struct bb_arg *a)
         default:
             STDERR_F("Unhandled arg encountered while generating output for %d",
                      a->at);
-            strncpy(str, "<unhandled>", 16);
+            strncpy(str, "<unhandled>", 128);
             break;
     }
 
     return str;
 }
+
+//void argmodeprint(struct bb_arg *a)
+//{
+//    switch(a->am)
+//    {
+//        case 
+//    }
+//}
 
 void free_if_not_null(char *s)
 {

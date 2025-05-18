@@ -11,11 +11,18 @@ enum args
     A_REG
 };
 
-enum modes
+enum argmode
 {
-    M_INDIRECT,
-    M_DIRECT
+    M_LITERAL,
+    M_POINTER,
+    M_ARRAY
 };
+
+#define LITERALTYPE(am)\
+    (M_LITERAL == am)
+
+#define ADDRTYPE(am)\
+    ((M_POINTER == am) || (M_ARRAY == am))
 
 enum quadtypes
 {
@@ -63,7 +70,8 @@ struct bb_arg_reg {
 
 struct bb_arg {
     enum args at;
-    
+
+    enum argmode am;
     uint32_t size;
 
     union
@@ -90,11 +98,15 @@ struct bb {
 
     struct bb_op *start;
 
-    struct bb *next;
+    struct bb *next;        // true
+    struct bb *next_alt;    // false
 };
 
-#define CUR_MODE_DIR        0
-#define CUR_MODE_INDIR      1
+#define LEFTOP\
+    (cursor.mode == 1)
+
+#define RIGHTOP\
+    (cursor.mode == 0)
 
 //#define IS_MODE_INDIR()     ((cursor.mode & CUR_MODE_INDIR))
 
@@ -106,9 +118,13 @@ struct bb_cursor
                         //  resets upon entrance to new fcn
     int reg_count;      // next available reg
 
-//    int mode;
-
+    int mode;           // 1 - we are in leftop mode
+                        // 0 - we are in rightop mode
+    
     struct bb *head;
+
+    struct bb *t;
+    struct bb *f;
 };
 
 // src/backend/basicblocks.c
@@ -127,9 +143,11 @@ struct bb_arg *create_arg(enum args argtype, struct bb_arg *inheritor);
 
 struct bb_op *bb_genop(enum quadtypes qt);
 struct bb_arg *bb_op_generate_constant(ast_node *n, struct bb *block);
+struct bb_arg *bb_op_generate_intconst(uint32_t num, struct bb *block);
 struct bb_arg *bb_op_generate_ident(ast_node *n);
 struct bb_arg *bb_op_generate_mov(struct bb_arg *src, struct bb_arg *dest, struct bb *block);
 struct bb_arg *bb_op_generate_store(struct bb_arg *src, struct bb_arg *dest, struct bb *block);
+struct bb_arg *bb_op_generate_mul(struct bb_arg *src1, struct bb_arg *src2, struct bb *block);
 struct bb_arg *bb_op_generate_addition(struct bb_arg *l, struct bb_arg *r, struct bb *block);
 struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
