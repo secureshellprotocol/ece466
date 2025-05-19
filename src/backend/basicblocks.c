@@ -381,12 +381,14 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                         }
                         break;
                     case '-':
-                        struct bb_arg *a = bb_gen_ir(n->unaop.expression);
-                        if(a == NULL)
-                            goto error;
-                        return bb_op_generate_neg(
-                                    a, create_arg(A_REG, NULL), cursor.current
-                                );
+                        {
+                            struct bb_arg *a = bb_gen_ir(n->unaop.expression);
+                            if(a == NULL)
+                                goto error;
+                            return bb_op_generate_neg(
+                                        a, create_arg(A_REG, NULL), cursor.current
+                                    );
+                        }
                     case '~': 
                         STDERR("Bitwise operations not supported!");
                         break;
