@@ -5,5 +5,7 @@ int f()
 
     int a[10], v;
     v = *a;
+
+    *p = b;
 }
 

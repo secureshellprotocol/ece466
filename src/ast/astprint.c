@@ -303,7 +303,7 @@ void astprint(ast_node *n)
             printf("(%s) ",n->goto_s.ident->ident.value);
         } else { printf("(\?\?\?)"); }
 
-        if(symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS, 1) == NULL)
+        if(symtab_lookup(current, n->goto_s.ident->ident.value, NS_LABELS, 1) != NULL)
         {
             printf("(DEF)");
         }
@@ -324,7 +324,8 @@ void astprint(ast_node *n)
         if(n->label_s.ident != NULL)
         {
             printf("(%s)", n->label_s.ident->ident.value);
-        }
+        }   else { printf("(\?\?\?)"); }
+
         printf(":\n");
         if(n->label_s.stmt != NULL)
         {

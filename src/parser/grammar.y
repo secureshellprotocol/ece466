@@ -273,9 +273,13 @@ shift_expression:
                 additive_expression { $$ = $1; }
                 | shift_expression SHL additive_expression  {
                     $$.n = ast_create_binop(SHL, $1.n, $3.n);
+                    STDERR_F("Bitwise shift not supported! %s:%d", 
+                        yyin_name, line_num);
                 }
                 | shift_expression SHR additive_expression  {
                     $$.n = ast_create_binop(SHR, $1.n, $3.n);
+                    STDERR_F("Bitwise shift not supported! %s:%d", 
+                        yyin_name, line_num);
                 }
                 ;
 
@@ -283,6 +287,7 @@ relational_expression:
                      shift_expression   { $$ = $1; }
                      | relational_expression '<' shift_expression   {
                         $$.n = ast_create_binop('<', $1.n, $3.n);
+
                      }
                      | relational_expression '>' shift_expression   {
                         $$.n = ast_create_binop('>', $1.n, $3.n);
@@ -311,6 +316,8 @@ and_expression:
               equality_expression   { $$ = $1; }
               | and_expression '&' equality_expression  {
                 $$.n = ast_create_binop('&', $1.n, $3.n);
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
               }
               ;
 
@@ -318,6 +325,8 @@ xor_expression:
               and_expression   { $$ = $1; } 
               | xor_expression '^' and_expression   {
                 $$.n = ast_create_binop('^', $1.n, $3.n);
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
               }
               ;
 
@@ -325,6 +334,8 @@ or_expression:
              xor_expression { $$ = $1; }
              | or_expression '|' xor_expression {
                 $$.n = ast_create_binop('|', $1.n, $3.n);
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
              }
              ;
 
@@ -332,6 +343,8 @@ logand_expression:
                  or_expression  { $$ = $1; }
                  | logand_expression LOGAND or_expression   {
                     $$.n = ast_create_binop(LOGAND, $1.n, $3.n);
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
                  }
                  ;
 
@@ -339,6 +352,8 @@ logor_expression:
                 logand_expression   { $$ = $1; }
                 | logor_expression LOGOR logand_expression  {
                     $$.n = ast_create_binop(LOGOR, $1.n, $3.n);
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
                 }
                 ;
 
@@ -350,6 +365,8 @@ conditional_expression:
 ternary_expression:
                   logor_expression '?' expression ':' conditional_expression {
                     $$.n = ast_create_ternop($1.n, $3.n, $5.n);
+                    STDERR_F("Ternary operators not supported! %s:%d", 
+                        yyin_name, line_num);
                   }
                   ;
 
@@ -368,11 +385,26 @@ assignment_operator:
                    | MODEQ      {$$.ulld = MODEQ;}
                    | PLUSEQ     {$$.ulld = PLUSEQ;}
                    | MINUSEQ    {$$.ulld = MINUSEQ;}
-                   | SHLEQ      {$$.ulld = SHLEQ;}
-                   | SHREQ      {$$.ulld = SHREQ;}
-                   | ANDEQ      {$$.ulld = ANDEQ;}
-                   | XOREQ      {$$.ulld = XOREQ;}
-                   | OREQ       {$$.ulld = OREQ;}
+                   | SHLEQ      {$$.ulld = SHLEQ;
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
+                   }
+                   | SHREQ      {$$.ulld = SHREQ;
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
+                   }
+                   | ANDEQ      {$$.ulld = ANDEQ;
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
+                   }
+                   | XOREQ      {$$.ulld = XOREQ;
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
+                   }
+                   | OREQ       {$$.ulld = OREQ;
+                    STDERR_F("Bitwise comparison not supported! %s:%d", 
+                        yyin_name, line_num);
+                   }
                    ;
 
 expression:
@@ -884,12 +916,16 @@ external_declaration:
                         // add bb to list of blocks
                         cursor.fn_num_counter++;
                         struct bb *block = bb_create(&cursor);
-                        astprint($1.n->fndef.stmt_list);
-                        bb_gen_ir($1.n->fndef.stmt_list, block);
-                        
-                        cursor_ingest(block);
+                        if(cursor.current != NULL)
+                            cursor_ingest(cursor.current);
 
-                        //bbprint(block);
+                        cursor.current = block;
+                        astprint($1.n->fndef.stmt_list);
+                        
+                        //bb_gen_ir($1.n->fndef.stmt_list, block);
+                        bb_gen_ir($1.n->fndef.stmt_list);
+
+                        cursor_ingest(block);
                     }
                     | declaration   { $$ = $1; }
                     ;

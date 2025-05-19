@@ -76,9 +76,14 @@ ast_node *ast_create_charlit(struct yy_struct ys)
 
 ast_node *ast_create_unaop(int token, ast_node *e)
 {
+    if(token == '!')
+    {
+        return (ast_create_binop(EQEQ, e, ast_create_constant(0)));
+    }
+    
     ast_node *n = create_node(UNAOP);
     
-    n->unaop.token = token;
+    n->unaop.token = token;   
     n->unaop.expression = e;
     
     return n;
@@ -88,6 +93,72 @@ ast_node *ast_create_binop(int token, ast_node *l, ast_node *r)
 {
     ast_node *n = create_node(BINOP);
     n->binop.token = token;
+
+    switch(token)
+    {
+        case TIMESEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('*', l, r)
+                           )); 
+            }
+        case DIVEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('/', l, r)
+                           )); 
+            }
+        case MODEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('%', l, r)
+                           )); 
+            }
+        case PLUSEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('+', l, r)
+                           )); 
+            }
+        case MINUSEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('-', l, r)
+                           )); 
+            }
+        case SHLEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop(SHL, l, r)
+                           )); 
+            }
+        case SHREQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop(SHR, l, r)
+                           )); 
+            }
+        case ANDEQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('&', l, r)
+                           )); 
+            }
+        case XOREQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('^', l, r)
+                           )); 
+            }
+        case OREQ:
+            {
+               return(ast_create_binop('=', l, 
+                           ast_create_binop('|', l, r)
+                           )); 
+            }
+        default:    // no equivalent, take it RAW   
+            break;
+    }
 
     n->binop.left = l;
     n->binop.right = r;

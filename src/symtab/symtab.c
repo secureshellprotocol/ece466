@@ -201,18 +201,18 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
     
     // make sure our key isnt already in the table
     //      permit a duplicate if we're in global scope.
-    // TODO: allow repeated function decls
-    if((scope->scope != SCOPE_GLOBAL) && (symtab_lookup(scope, new->key, NS_IDENTS, 1) != NULL))
+    if((symtab_lookup(scope, new->key, NS_IDENTS, 1)) != NULL)
     {
-//        switch(decl_type)
-//        {
-//            case VARIABLE:
-//            case FUNCTION:
-//            default:
-//        }    
+        // Allow multiple decls in global scope
+        if(scope->scope == SCOPE_GLOBAL)
+        {
+            symtabprint(scope, NS_IDENTS, new->key);
+            goto checkdone;
+        }
 
         STDERR_F("variable %s already exists in symtab!", new->key);
-        
+
+checkdone:
         free(new);
         return;
     }
@@ -237,22 +237,53 @@ void _symtab_install_var(symbol_scope *scope, ast_node *decl,
 void _symtab_install_label(symbol_scope *scope, ast_node *decl,
         char *yyin_name, unsigned int line_num)
 {
+    if(scope->scope == SCOPE_GLOBAL)
+    {
+        STDERR_F("Cannot insert label into global scope! at %s:%d", yyin_name, line_num);
+        return;
+    }
+
+    
     symtab_elem *new = calloc(1, sizeof(symtab_elem));
     
-    new->d = NULL;  // we dont really care
+    new->d = decl->label_s.stmt;        // could be NULL
     
     new->file_origin = strdup(yyin_name);
     new->line_num_origin = line_num;
     
     new->key = strdup(decl->label_s.ident->ident.value);
     
-    // make sure our key isnt already in the table
-    if(symtab_lookup(scope, new->key, NS_LABELS, 1) != NULL)
+    // make sure our complete label isnt already in the table
+    //  finish if we are incomplete
+    symtab_elem *check;
+    if((check = symtab_lookup(scope, new->key, NS_IDENTS, 1)) != NULL)
     {
-        STDERR_F("label %s already exists in symtab!", new->key);
-        free(new);
-        return;
+        if(check->d == NULL)
+        {
+            if(new->d == NULL)
+            {
+                // nothing to do
+                return;
+            }
+            // continue as normal, have 'new' replace 'check' in symtab
+            check->d = new->d;
+            check->file_origin = new->file_origin;
+            check->line_num_origin = new->line_num_origin;
+            
+            free(new->file_origin);
+            free(new);
+            return;
+        }
+        else
+        {
+            STDERR_F("label %s already exists in symtab!", new->key);
+    
+            free(new->file_origin);
+            free(new);
+            return;
+        }
     }
+
     
     // inject into label namespace
     new->next = scope->labels;
@@ -307,9 +338,10 @@ void symtab_install(symbol_scope *scope, ast_node *decl_list,
 //                        );
 //                break;
             default:
-                STDERR_F("Cannot install ast node of type %d to symtab!",
+                STDERR_F("Cannot install ast node of type %d to symtab! PRINTING AST",
                         li->op_type);
                 astprint(li);
+                STDERR("PRINT DONE")
                 break;
         }
         decl_list = decl_list->list.next;
