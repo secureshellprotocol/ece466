@@ -232,25 +232,13 @@ error:
     return -1;
 }
 
-// broken
-uint32_t calculate_sizeof(ast_node *d)
+// semi broken
+uint32_t calculate_sizeof(ast_node *spec)
 {
-    if(d->op_type != DECLARATION)
-    {
-        STDERR("Not a declaration!");
-        return -1;
-    }
-
-    if(d->d.decl_specs == NULL)
-    {
-        STDERR("No decl specs found!");
-        return -1;
-    }
-
-    ast_node *spec = d->d.decl_specs->list.value;
     uint32_t sum = 0;
 
-    if(spec != NULL)
+    if(spec && spec->op_type == LIST)
+        return calculate_sizeof(spec->list.value);
 
     while(spec != NULL)
     {
@@ -268,34 +256,16 @@ uint32_t calculate_sizeof(ast_node *d)
             case CHAR:
                 sum += sizeof(char);
                 break;
+            case IDENT:
+                astprint(spec->list.value);
+                break;
             default:
                 STDERR("Skipping:")
                 astprint(spec->list.value);
+                sum += sizeof(int); // assumption
                 break;
         }
         spec = spec->list.next;
     }
-    
-    ast_node *decl = d->d.declarator->list.next;
-    while(decl != NULL)
-    {
-        switch(decl->list.value->op_type)
-        {
-            case ARRAY:
-                if(decl->list.value->array.size == NULL)
-                {
-                    STDERR("Provided incomplete array type!");
-                    return -1;
-                }
-                sum *= decl->list.value->array.size->num.ival;
-                break;
-            default:
-                STDERR("Skipping:");
-                astprint(decl->list.value);
-                break;
-        }
-        decl = decl->list.next;
-    }
-
     return sum;
 }

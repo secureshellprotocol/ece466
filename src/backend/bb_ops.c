@@ -196,6 +196,18 @@ struct bb_arg *bb_op_generate_sub(struct bb_arg *src1, struct bb_arg *src2, stru
     return o->dest;
 }
 
+struct bb_arg *bb_op_generate_neg(struct bb_arg *src1, struct bb_arg *dest, struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_SUB);
+
+    o->src1 = src1;
+    o->dest = dest;
+
+    bb_op_append(o, block);
+
+    return o->dest;
+}
+
 struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, struct bb *block)
 {
     struct bb_op *o = bb_genop(Q_LOAD);
@@ -220,71 +232,111 @@ struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, stru
     return o->dest;
 }
 
-//struct bb_arg *bb_op_generate_cmp(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
-//{
-//    struct bb_op *o = bb_genop(Q_CMP);
-//
-//    o->src1 = src1;
-//    o->src2 = src2;
-//    o->dest = create_arg(A_REG, generate_inheritor(src1, src2));
-//
-//    bb_op_append(o, block);
-//
-//    return o->dest;
-//}
-//
-////struct bb_arg *bb_op_generate_brlt(struct bb_arg *res, struct bb *block)
-//{
-//    struct bb_op *o = bb_genop(Q_BRLT);
-//
-//    o->src1 = res;
-//    o->dest = create_arg(A_REG, res);
-//
-//    bb_op_append(o, block);
-//
-//    return o->dest;
-//}
-//
-//struct bb_arg *bb_op_generate_brgt(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
-//{
-//    struct bb_op *o = bb_genop(Q_BRGT);
-//
-//    o->src1 = src1;
-//    o->src2 = src2;
-//    o->dest = create_arg(A_REG, generate_inheritor(src1, src2));
-//
-//    bb_op_append(o, block);
-//
-//    return o->dest;
-//}
-//
-//struct bb_arg *bb_op_generate_breq(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
-//{
-//    struct bb_op *o = bb_genop(Q_BREQ);
-//
-//    o->src1 = src1;
-//    o->src2 = src2;
-//    o->dest = create_arg(A_REG, generate_inheritor(src1, src2));
-//
-//    bb_op_append(o, block);
-//
-//    return o->dest;
-//}
-//
-//struct bb_arg *bb_op_generate_brneq(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
-//{
-//    struct bb_op *o = bb_genop(Q_BRNEQ);
-//
-//    o->src1 = src1;
-//    o->src2 = src2;
-//    o->dest = create_arg(A_REG, generate_inheritor(src1, src2));
-//
-//    bb_op_append(o, block);
-//
-//    return o->dest;
-//}
+struct bb_arg *bb_op_generate_cmp(struct bb_arg *src1, struct bb_arg *src2, struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_CMP);
 
+    o->src1 = src1;
+    o->src2 = src2;
 
+    bb_op_append(o, block);
+
+    cursor.mode = 0;
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_brlt(struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_BRLT);
+
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_brgt(struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_BRGT);
+
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_breq(struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_BREQ);
+
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_brneq(struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_BRNEQ);
+
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_jump(struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_JUMP);
+    
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_return(struct bb_arg *src1, struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_RETURN);
+
+    o->src1 = src1;
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_arg(ast_node *argval, uint32_t arg, struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_ARG);
+
+    o->src1 = bb_gen_ir(argval);
+    o->src2 = bb_op_generate_intconst(arg, block);
+
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+struct bb_arg *bb_op_generate_call(struct bb_arg *l, uint32_t arg, struct bb *block)
+{
+    struct bb_op *o = bb_genop(Q_CALL);
+
+    o->src1 = l;
+    o->src2 = bb_op_generate_intconst(arg, block);
+    o->dest = create_arg(A_REG, NULL);
+    
+    // assuming int retval
+    o->dest->am = M_LITERAL;
+    o->dest->size = sizeof(int);
+    
+    bb_op_append(o, block);
+
+    return NULL;
+}
+
+// this was a brainrotten attempt to somehow carry size information, for
+// calculating multidim arrays, and to know whether a register points to an
+// array, pointer, or "literal" (int, char, etc).
+// its bugged, in that it cant do multidim arrays. its good duct tape for
+// knowing when to lea vs load. if given more time, i would cast this entire
+// data structure into the depths of hell and just go back and implement sizeof
+// properly. oh well! truly bestows this as a "cringepiler"
 struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block)
 {
     if(d == NULL)
@@ -337,6 +389,12 @@ struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block)
             a = bb_op_generate_ident(d->list.value);
             a->size = sizeof(int);
             a->am = M_LITERAL;
+            return a;
+            break;
+        case FUNCTION:
+            a = bb_op_generate_ident(d->list.value->fncall.label->list.value);
+            a->size = sizeof(int);
+            a->am = M_LITERAL;      // these are wrong and placeholders
             return a;
             break;
         default:

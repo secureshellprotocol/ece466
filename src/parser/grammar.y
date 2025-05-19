@@ -161,7 +161,7 @@ primary_expression:
                     $$.n = ast_create_string($1);
                   }
                   | '(' expression ')'  {
-                    $$ = $2;
+                    $$.n = $2.n;
                   }
                   ;
 
@@ -178,10 +178,12 @@ postfix_expression:
                     $$.n = ast_create_func_call($1.n, $3.n);
                   }
                   | postfix_expression '.' IDENT    {
+                    STDERR("Struct members not supported!");
                     $$.n = ast_create_binop('.', 
                         $1.n, ast_create_ident($3));
                   }
                   | postfix_expression INDSEL IDENT {
+                    STDERR("Indirect selection (->) not supported!");
                     $$.n = ast_create_binop('.', 
                         ast_create_unaop('*', $1.n), 
                         ast_create_ident($3));
@@ -373,7 +375,9 @@ ternary_expression:
 assignment_expression: 
                      conditional_expression { $$ = $1; }
                      | unary_expression assignment_operator
-                        assignment_expression   {
+                        assignment_expression   {   
+                        if($3.n->op_type == LIST && $3.n->list.next == NULL)
+                            $3.n = $3.n->list.value;
                         $$.n = ast_create_binop($2.ulld, $1.n, $3.n);
                      }
                      ;
@@ -911,10 +915,8 @@ external_declaration:
                     function_definition { 
                         $$ = $1;
                         
-                        astprint($1.n);
-                        
                         // add bb to list of blocks
-                        cursor.fn_num_counter++;
+
                         struct bb *block = bb_create(&cursor);
                         if(cursor.current != NULL)
                             cursor_ingest(cursor.current);
@@ -922,10 +924,11 @@ external_declaration:
                         cursor.current = block;
                         astprint($1.n->fndef.stmt_list);
                         
-                        //bb_gen_ir($1.n->fndef.stmt_list, block);
                         bb_gen_ir($1.n->fndef.stmt_list);
 
                         cursor_ingest(block);
+
+                        cursor.fn_num_counter++;
                     }
                     | declaration   { $$ = $1; }
                     ;

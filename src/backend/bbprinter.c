@@ -46,14 +46,14 @@ void bbprint(struct bb *block)
     struct bb_op *o = block->start;
     while(o != NULL)
     {
-        bbprint_op(o);
+        bbprint_op(o, block);
         o = o->next;
     }
     
     return;
 }
 
-void bbprint_op(struct bb_op *o)
+void bbprint_op(struct bb_op *o, struct bb *block)
 {
     if(o == NULL)
     {
@@ -77,20 +77,70 @@ void bbprint_op(struct bb_op *o)
         case Q_ADD:
             printf("%s\t = ADD %s, %s", dest_s, src1_s, src2_s);
             break;
+        case Q_SUB:
+            printf("%s\t = SUB %s, %s", dest_s, src1_s, src2_s);
+            break;
+        case Q_MULT:
+            printf("%s\t = MULT %s, %s", dest_s, src1_s, src2_s);
+            break;
+        case Q_DIV:
+            printf("%s\t = DIV %s, %s", dest_s, src1_s, src2_s);
+            break;
+        case Q_MOD:
+            printf("%s\t = MOD %s, %s", dest_s, src1_s, src2_s);
+            break;
         case Q_LOAD:
             printf("%s\t = LOAD %s", dest_s, src1_s);
             break;
         case Q_LEA:
             printf("%s\t = LEA %s", dest_s, src1_s);
             break;
-        case Q_MULT:
-            printf("%s\t = MULT %s, %s", dest_s, src1_s, src2_s);
-            break;
         case Q_STORE:
             printf("\t   STORE %s, %s", src1_s, dest_s);
             break;
+        case Q_CMP:
+            printf("\t   CMP %s, %s", src1_s, src2_s);
+            break;
+        case Q_BRLT:
+            printf("\t   BRLT BB.%d.%d, BB.%d.%d", 
+                    block->t->fn_num, block->t->bb_num,
+                    block->f->fn_num, block->f->bb_num);
+            break;
+        case Q_BRGT:
+            printf("\t   BRGT BB.%d.%d, BB.%d.%d", 
+                    block->t->fn_num, block->t->bb_num,
+                    block->f->fn_num, block->f->bb_num);
+            break;
+        case Q_BREQ:
+            printf("\t   BREQ BB.%d.%d, BB.%d.%d", 
+                    block->t->fn_num, block->t->bb_num,
+                    block->f->fn_num, block->f->bb_num);
+            break;
+        case Q_BRNEQ:
+            printf("\t   BRNEQ BB.%d.%d, BB.%d.%d", 
+                    block->t->fn_num, block->t->bb_num,
+                    block->f->fn_num, block->f->bb_num);
+            break;
+        case Q_JUMP:
+            printf("\t   JUMP BB.%d.%d",
+                    block->t->fn_num, block->t->bb_num);
+            break;
+        case Q_BREAK:
+            printf("\t   JUMP BB.%d.%d", 
+                    block->f->fn_num, block->f->bb_num);
+            break;
+        case Q_RETURN:
+            printf("\t   RETURN %s", src1_s);
+            break;
+        case Q_ARG:
+            printf("\t   ARG %s, %s", src1_s, src2_s);
+            break;
+        case Q_CALL:
+            printf("%s\t = CALL %s, %s", dest_s, src1_s, src2_s);
+            break;
         default:
-            STDERR_F("WTF??? OP: %d", o->qt);
+            printf("WTF??? OP: %d", o->qt);
+            break;
     }
     
     printf("\n");

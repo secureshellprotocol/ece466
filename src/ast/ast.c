@@ -96,66 +96,87 @@ ast_node *ast_create_binop(int token, ast_node *l, ast_node *r)
 
     switch(token)
     {
+        case '=':
+        {
+            // optimize rval conditional into an implicit if-stmt
+            if(r->op_type != BINOP) { break; }
+
+            switch(r->binop.token)
+            {
+                case '>': case '<': case LTEQ: case GTEQ: case EQEQ: case NOTEQ: case '!':
+                    STDERR("PERFORMING CONDITIONAL -> IF SUBSTITUTION");
+                    STDERR("Have:");
+                    astprint(l); STDERR("and") astprint(r);
+                    return ast_create_if_stmt(
+                            r,
+                            ast_create_binop('=', l, ast_create_constant(1)),
+                            ast_create_binop('=', l, ast_create_constant(0))
+                            );
+                default:
+                    break;
+            }
+            break;
+        }
         case TIMESEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('*', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('*', l, r)
+                       )); 
+        }
         case DIVEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('/', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('/', l, r)
+                       )); 
+        }
         case MODEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('%', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('%', l, r)
+                       )); 
+        }
         case PLUSEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('+', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('+', l, r)
+                       )); 
+        }
         case MINUSEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('-', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('-', l, r)
+                       )); 
+        }
         case SHLEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop(SHL, l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop(SHL, l, r)
+                       )); 
+        }
         case SHREQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop(SHR, l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop(SHR, l, r)
+                       )); 
+        }
         case ANDEQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('&', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('&', l, r)
+                       )); 
+        }
         case XOREQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('^', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('^', l, r)
+                       )); 
+        }
         case OREQ:
-            {
-               return(ast_create_binop('=', l, 
-                           ast_create_binop('|', l, r)
-                           )); 
-            }
+        {
+           return(ast_create_binop('=', l, 
+                       ast_create_binop('|', l, r)
+                       )); 
+        }
         default:    // no equivalent, take it RAW   
             break;
     }

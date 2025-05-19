@@ -28,8 +28,8 @@ void astprint(ast_node *n)
     }
 
     static int depth;
-    ++depth;
 
+    depth++;
     JUSTIFY;
 
     //printf("(%d) ", n->op_type);
@@ -95,22 +95,18 @@ void astprint(ast_node *n)
     case TERNOP:
         printf("TERNARY OP \n"); 
         
-        depth++; 
         if(n->ternop.left != NULL)
             astprint(n->ternop.left);
 
-        JUSTIFY;
-        printf("TRUE:\n");
+        JUSTIFY; printf(" TRUE:\n");
         if(n->ternop.middle != NULL)
             astprint(n->ternop.middle);
-        JUSTIFY;
-        printf("ELSE:\n");
+        JUSTIFY; printf(" ELSE:\n");
         if(n->ternop.right != NULL)
             astprint(n->ternop.right);
-        depth--;
         break;
     case LIST:
-        printf("\r");
+        printf("LIST:");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
@@ -121,8 +117,7 @@ void astprint(ast_node *n)
         break;
     case ARRAY:
         printf("ARRAY");
-        JUSTIFY;
-        printf(" SIZE: ");
+        JUSTIFY; printf(" SIZE: ");
         if(n->array.size != NULL)
             astprint(n->array.size);
         else
@@ -137,19 +132,15 @@ void astprint(ast_node *n)
         {
             astprint(n->fncall.label);
         }
-        if(n->fncall.arglist != NULL)
+    if(n->fncall.arglist != NULL)
         {
-            JUSTIFY;
-            printf("WITH ARGUMENTS \n");
+            JUSTIFY; printf(" WITH ARGUMENTS \n");
             astprint(n->fncall.arglist);
         }
-        printf("DONE WITH FUNCTION\n\n");
         break;
     case DECLARATION:
         printf("DECLARATION\n");
-        depth++;
-        JUSTIFY;
-        printf("STORAGE CLASS: ");
+        JUSTIFY; printf(" STORAGE CLASS: ");
         if(n->d.stgclass == NULL)
         {
             printf("NONE\n");
@@ -158,38 +149,31 @@ void astprint(ast_node *n)
         {
             astprint(n->d.stgclass);
         }
-        JUSTIFY;
-        printf("WITH DECLARATION SPECIFIERS:\n");
+        JUSTIFY; printf(" WITH DECLARATION SPECIFIERS:\n");
         astprint(n->d.decl_specs);
-        JUSTIFY;
-        printf("AND DECLARATORS:\n");
+        JUSTIFY; printf(" AND DECLARATORS:\n");
         astprint(n->d.declarator);
-        depth--;
         break;
     case FNDEF:
         printf("FUNCTION DEFINITION\n");
-        depth++;
         astprint(n->fndef.decl);
         if(n->fndef.stmt_list != NULL)
         {
             JUSTIFY;
-            printf("Function Body\n");
+            printf(" WITH BODY\n");
             astprint(n->fndef.stmt_list);
         }
-        depth--;
         break;
     case IF:
         printf("IF\n");
-        JUSTIFY;
-        printf("EXPR:\n");
+        JUSTIFY; printf(" EXPR:\n");
         if(n->if_s.expr != NULL)
         {
             astprint(n->if_s.expr);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("TRUE:\n");
+        JUSTIFY; printf(" TRUE:\n");
         if(n->if_s.stmt != NULL)
         {
             astprint(n->if_s.stmt);
@@ -198,103 +182,87 @@ void astprint(ast_node *n)
         
         if(n->if_s.else_stmt != NULL)
         {
-            JUSTIFY;
-            printf("ELSE\n");
+            JUSTIFY; printf(" ELSE\n");
             astprint(n->if_s.else_stmt);
         }
-
         break;
     case SWITCH:
         printf("SWITCH\n");
-        JUSTIFY;
-        printf("EXPR:\n");
+        JUSTIFY; printf(" EXPR:\n");
         if(n->switch_s.expr != NULL)
         {
             astprint(n->switch_s.expr);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("STMT:\n");
+        JUSTIFY; printf(" STMT:\n");
         if(n->switch_s.stmt != NULL)
         {
             astprint(n->switch_s.stmt);
         }
         else printf(" EMPTY\n");
-
         break;
     case WHILE:
         printf("WHILE\n");
-        JUSTIFY;
-        printf("EXPR:\n");
+        JUSTIFY; printf(" EXPR:\n");
         if(n->while_s.expr != NULL)
         {
             astprint(n->while_s.expr);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("STMT:\n");
+        JUSTIFY; printf(" STMT:\n");
         if(n->while_s.stmt != NULL)
         {
             astprint(n->while_s.stmt);
         }
         else printf(" EMPTY\n");
-
         break;
     case DO:
         printf("DO\n");
-        JUSTIFY;
-        printf("EXPR:\n");
+        JUSTIFY; printf(" EXPR:\n");
         if(n->do_while_s.expr != NULL)
         {
             astprint(n->do_while_s.expr);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("STMT:\n");
+        JUSTIFY; printf(" STMT:\n");
         if(n->do_while_s.stmt != NULL)
         {
             astprint(n->do_while_s.stmt);
         }
         else printf(" EMPTY\n");
-
         break;
     case FOR:
         printf("FOR\n");
-        JUSTIFY;
-        printf("INIT:\n");
+        JUSTIFY; printf(" INIT:\n");
         if(n->for_s.cl1 != NULL)
         {
             astprint(n->for_s.cl1);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("COND:\n");
+        JUSTIFY; printf(" COND:\n");
         if(n->for_s.cl2 != NULL)
         {
             astprint(n->for_s.cl2);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("INC:\n");
+        JUSTIFY; printf(" INC:\n");
         if(n->for_s.cl3 != NULL)
         {
             astprint(n->for_s.cl3);
         }
         else printf(" EMPTY\n");
 
-        JUSTIFY;
-        printf("BODY:\n");
+        JUSTIFY; printf(" BODY:\n");
         if(n->for_s.stmt != NULL)
         {
             astprint(n->for_s.stmt);
         }
         else printf(" EMPTY\n");
-        
         break;
     case GOTO:
         printf("GOTO");
@@ -308,7 +276,6 @@ void astprint(ast_node *n)
             printf("(DEF)");
         }
         printf("\n");
-
         break;
     case RETURN:
         printf("RETURN");
@@ -319,7 +286,6 @@ void astprint(ast_node *n)
         break;
     case LABEL:
         printf("LABEL");
-        depth++;
         JUSTIFY;
         if(n->label_s.ident != NULL)
         {
@@ -331,39 +297,28 @@ void astprint(ast_node *n)
         {
             astprint(n->label_s.stmt);
         }
-        depth--;
         break;
     case CASE:
         printf("CASE\n");
-        depth++;
-        JUSTIFY;
+        JUSTIFY; printf(" EXPR:");
         if(n->label_s.expr != NULL)
         {
-            printf("EXPR:\n");
             astprint(n->label_s.expr);
         }
-        else
-        {
-            printf("NO EXPR\n");
-        }
-        JUSTIFY;
+        else { printf(" NO EXPR\n"); }
+        JUSTIFY; printf(" STMT:");
         if(n->label_s.stmt != NULL)
         {
-            printf("STMT:\n");
             astprint(n->label_s.stmt);
-        }
-        depth--;
+        } else { printf(" NO STMT\n"); }
         break;
     case DEFAULT:
         printf("DEFAULT\n");
-        depth++;
-        JUSTIFY;
+        JUSTIFY; printf(" STATEMENT: ");
         if(n->label_s.stmt != NULL)
         {
-            printf("STATEMENT: \n");
             astprint(n->label_s.stmt);
-        }
-        depth--;
+        } else { printf(" NONE\n"); }
         break;
     // constant keywords -- 100j 
     case AUTO:

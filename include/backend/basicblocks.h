@@ -1,8 +1,37 @@
 #ifndef __BASICBLOCKS_H_JR
 #define __BASICBLOCKS_H_JR
 
+#include <stdint.h>
+
 #include <ast/ast.h>
 #include <symtab/symtab.h>
+
+enum quadtypes
+{
+    Q_NOOP,
+    Q_ADD,
+    Q_SUB,
+    Q_MULT,
+    Q_DIV,
+    Q_MOD,
+    Q_JUMP,
+    Q_LEA,
+    Q_LOAD,
+    Q_MOV,
+    Q_STORE,
+    Q_CMP,
+    Q_BRLT,
+    Q_BRGT,
+    Q_BREQ,
+    Q_BRNEQ,
+    Q_BREAK,
+    Q_RETURN,
+    Q_ARG,
+    Q_CALL,
+    Q_TERM
+};
+
+/* arg types */
 
 enum args
 {
@@ -24,29 +53,6 @@ enum argmode
 #define ADDRTYPE(am)\
     ((M_POINTER == am) || (M_ARRAY == am))
 
-enum quadtypes
-{
-    Q_NOOP,
-    Q_ADD,
-    Q_SUB,
-    Q_MULT,
-    Q_DIV,
-    Q_MOD,
-    Q_JUMP,
-    Q_LEA,
-    Q_LOAD,
-    Q_MOV,
-    Q_STORE,
-    Q_CMP,
-    Q_BRLT,
-    Q_BRGT,
-    Q_BREQ,
-    Q_BRNEQ,
-    Q_ARG,
-    Q_TERM
-};
-
-/* arg types */
 
 // variable reference from a scope
 //  can be a direct reference, or a pointer to something. keep in mind!
@@ -122,6 +128,9 @@ struct bb_cursor
     struct bb *head;
 
     struct bb *current;
+
+    struct bb *cp;
+    struct bb *bp;
 };
 
 // src/backend/basicblocks.c
@@ -157,15 +166,23 @@ struct bb_arg *bb_op_generate_addition(struct bb_arg *l, struct bb_arg *r, struc
 struct bb_arg *bb_op_generate_div(struct bb_arg *src1, struct bb_arg *src2, struct bb *block);
 struct bb_arg *bb_op_generate_mod(struct bb_arg *src1, struct bb_arg *src2, struct bb *block);
 struct bb_arg *bb_op_generate_sub(struct bb_arg *src1, struct bb_arg *src2, struct bb *block);
+struct bb_arg *bb_op_generate_neg(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 
 struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, struct bb *block);
 
 struct bb_arg *bb_op_generate_cmp(struct bb_arg *src1, struct bb_arg *src2, struct bb *block);
-//struct bb_arg *bb_op_generate_brlt(struct bb_arg *res, struct bb *block);
-//struct bb_arg *bb_op_generate_brgt(struct bb_arg *res, struct bb *block);
-//struct bb_arg *bb_op_generate_breq(struct bb_arg *res, struct bb *block);
-//struct bb_arg *bb_op_generate_brneq(struct bb_arg *res, struct bb *block);
+struct bb_arg *bb_op_generate_brlt(struct bb *block);
+struct bb_arg *bb_op_generate_brgt(struct bb *block);
+struct bb_arg *bb_op_generate_breq(struct bb *block);
+struct bb_arg *bb_op_generate_brneq(struct bb *block);
+struct bb_arg *bb_op_generate_jump(struct bb *block);
+struct bb_arg *bb_op_generate_return(struct bb_arg *src1, struct bb *block);
+struct bb_arg *bb_op_generate_break(struct bb *block);
+struct bb_arg *bb_op_generate_continue(struct bb *block);
+
+struct bb_arg *bb_op_generate_arg(ast_node *argval, uint32_t arg, struct bb *block);
+struct bb_arg *bb_op_generate_call(struct bb_arg *l, uint32_t arg, struct bb *block);
 
 struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block);
 
@@ -173,7 +190,7 @@ struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block);
 
 void cursorprint();
 void bbprint(struct bb *block);
-void bbprint_op(struct bb_op *o);
+void bbprint_op(struct bb_op *o, struct bb *block);
 char *genargstr(struct bb_arg *a);
 void free_if_not_null(char *s);
 

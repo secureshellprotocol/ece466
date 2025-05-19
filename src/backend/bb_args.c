@@ -95,4 +95,5 @@ struct bb_arg *generate_inheritor(struct bb_arg *src1, struct bb_arg *src2)
             return a;
         }
     }
+    return NULL;
 }
