@@ -4,8 +4,10 @@
 #include <ast/ast.h>
 #include <parser/grammar.tab.h>
 #include <parser/op.h>
-
 #include <lexer/lexer.lex.h>
+#include <symtab/symtab.h>
+
+extern symbol_scope *current;
 
 // not async safe
 // these macros are defined in
@@ -232,40 +234,147 @@ error:
     return -1;
 }
 
-// semi broken
-uint32_t calculate_sizeof(ast_node *spec)
+uint32_t calculate_sizeof(ast_node *n)
 {
+    if(n == NULL)
+    {
+        STDERR("Provided NULL node!");
+    }
+    
+    if(n->op_type == LIST)
+        n = n->list.value;
+
+    astprint(n);
+
+    switch(n->op_type)
+    {
+        case IDENT:
+            return ast_get_ident_size(n);
+            break;
+        case UNAOP:
+            {
+                if(n->unaop.token == '*')
+                {
+                    return calculate_sizeof(n->unaop.expression);
+                }
+            }
+            break;
+        case BINOP:
+            {
+                int l, r;
+                l = calculate_sizeof(n->binop.left);
+                r = calculate_sizeof(n->binop.right);
+                if(l > r) 
+                    return l;
+                return r;
+            }
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+uint32_t ast_get_type_size(ast_node *d)
+{
+    uint32_t tags = 0;
     uint32_t sum = 0;
 
-    if(spec && spec->op_type == LIST)
-        return calculate_sizeof(spec->list.value);
-
-    while(spec != NULL)
+    if(d == NULL || d->d.decl_specs == NULL)
     {
-        switch(spec->op_type)
+        STDERR("Provided null specifiers when calculating sizeof!");
+        return 0;
+    }
+
+    ast_node *spec = d->d.decl_specs;
+    while(spec)
+    {
+        switch(spec->list.value->op_type)
         {  
             case INT:
-                sum += sizeof(int);
+                if(IS_INT(tags)) break;
+                TAG_SET(tags, TS_INT);        
+                sum = sizeof(int);
                 break;
             case LONG:
-                sum += sizeof(long);
+                if(IS_LONG(tags))
+                {
+                    if(!IS_LONGLONG(tags))
+                    {
+                        TAG_SET(tags, TS_LONGLONG);
+                        sum = sizeof(long long);
+                    }
+                    break;
+                }
+                TAG_SET(tags, TS_LONG);
+                sum = sizeof(long);
                 break;
             case SHORT:
-                sum += sizeof(short);
+                if(IS_SHORT(tags)) break;
+                TAG_SET(tags, TS_SHORT);
+                sum = sizeof(short);
                 break;
             case CHAR:
-                sum += sizeof(char);
+                if(IS_CHAR(tags)) break;
+                TAG_SET(tags, TS_CHAR);
+                sum = sizeof(char);
                 break;
-            case IDENT:
-                astprint(spec->list.value);
+            case VOID:
+                if(IS_VOID(tags)) break;
+                TAG_SET(tags, TS_VOID);
+                sum = sizeof(void);
                 break;
             default:
-                STDERR("Skipping:")
-                astprint(spec->list.value);
-                sum += sizeof(int); // assumption
+                STDERR("Skipping:") // signed, unsigned, float... we dont care
+                //astprint(spec->list.value);
                 break;
         }
         spec = spec->list.next;
     }
+    
+    // can be valid, eg "unsigned x;"
+    if(tags == 0)
+        sum = sizeof(int);
+
+   
+    ast_node *decls = d->d.declarator;
+    while(decls)
+    {
+        switch(decls->list.value->op_type)
+        {
+            case POINTER:
+                sum = sizeof(int *);
+                break;
+            case ARRAY:
+                sum *= decls->list.value->array.size->num.ival;
+                break;
+            default:
+                break;
+        }
+        decls = decls->list.next;
+    }
+
     return sum;
 }
+
+uint32_t ast_get_ident_size(ast_node *ident)
+{
+    if(ident == NULL || ident->op_type != IDENT)
+    {
+        STDERR("Not an ident!");
+        if(ident != NULL)
+            astprint(ident);
+        return 0;
+    }
+
+    symtab_elem *s = symtab_lookup(
+            current,
+            ident->ident.value,
+            NS_IDENTS, -1
+            );
+    
+    return ast_get_type_size(s->d);
+}
+
+
+

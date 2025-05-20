@@ -106,14 +106,13 @@ void astprint(ast_node *n)
             astprint(n->ternop.right);
         break;
     case LIST:
-        printf("LIST:");
+        printf("LIST {\n");
         astprint(n->list.value);
         if(n->list.next != NULL)
         {
-            depth--;
             astprint(n->list.next);
-            depth++;
         }
+        JUSTIFY; printf("}\n");
         break;
     case ARRAY:
         printf("ARRAY");
