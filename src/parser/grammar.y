@@ -168,6 +168,14 @@ primary_expression:
 postfix_expression:
                   primary_expression    { $$ = $1; }
                   | postfix_expression '[' assignment_expression ']'    {
+                    /*ast_node *add = ast_create_binop('+', 
+                        $1.n, 
+                        ast_create_binop('*', $3.n, 
+                            ast_create_unaop(SIZEOF, 
+                                ast_create_unaop('*', $1.n)
+                            )
+                        )
+                    );*/
                     ast_node *add = ast_create_binop('+', $1.n, $3.n);
                     $$.n = ast_create_unaop('*', add);
                   }
