@@ -41,6 +41,14 @@ void bbprint(struct bb *block)
     {
         STDERR("Empty block");
     }
+    
+    if(block->invert == 1)
+    {
+        struct bb *tmp = block->t;
+        block->t = block->f;
+        block->f = tmp;
+    }
+
 
     printf(".BB.%d.%d\n", block->fn_num, block->bb_num);
     struct bb_op *o = block->start;
@@ -66,7 +74,7 @@ void bbprint_op(struct bb_op *o, struct bb *block)
     src1_s = genargstr(o->src1);
     src2_s = genargstr(o->src2);
     dest_s = genargstr(o->dest);
-    
+
     printf("\t");
 
     switch(o->qt)

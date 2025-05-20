@@ -134,7 +134,6 @@ struct bb_arg *bb_op_generate_addition(struct bb_arg *src1, struct bb_arg *src2,
     o->dest = create_arg(A_REG, generate_inheritor(src1, src2));
     
     // Multidim is broken if you have more than 2 dims
-    // todo never make a calculate_sizeof
 //    if(ADDRTYPE(src1->am) || (ADDRTYPE(src2->am)))
 //    {
 //        o->dest->size = sizeof(int *);
@@ -215,6 +214,15 @@ struct bb_arg *bb_op_generate_load(struct bb_arg *src1, struct bb_arg *dest, str
     o->src1 = src1;
     o->dest = dest;
 
+    if(o->src1->am == M_ARRAY)
+    {   // promote array -> pointer
+        //o->dest->size = sizeof(int *);
+        //o->dest->am = M_POINTER;
+        //return o->src1; // no append
+    }
+    o->dest->size = sizeof(int);
+    o->dest->am = M_LITERAL;
+
     bb_op_append(o, block);
 
     return o->dest;
@@ -226,7 +234,7 @@ struct bb_arg *bb_op_generate_lea(struct bb_arg *src1, struct bb_arg *dest, stru
 
     o->src1 = src1;
     o->dest = dest;
-
+    
     bb_op_append(o, block);
 
     return o->dest;
@@ -330,13 +338,9 @@ struct bb_arg *bb_op_generate_call(struct bb_arg *l, uint32_t arg, struct bb *bl
     return NULL;
 }
 
-// this was a brainrotten attempt to somehow carry size information, for
-// calculating multidim arrays, and to know whether a register points to an
-// array, pointer, or "literal" (int, char, etc).
-// its bugged, in that it cant do multidim arrays. its good duct tape for
-// knowing when to lea vs load. if given more time, i would cast this entire
-// data structure into the depths of hell and just go back and implement sizeof
-// properly. oh well! truly bestows this as a "cringepiler"
+// this function serves to characterize each ident, and assign them as either
+// being in "literal" mode, or in "address" mode, the latter having either array
+// address mode, or 
 struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block)
 {
     if(d == NULL)
@@ -362,23 +366,24 @@ struct bb_arg *bb_op_generate_declarators(ast_node *d, struct bb *block)
                 return NULL;
             }
 
-            if(a->am == M_ARRAY) //multidim
+            if(a->am == M_ARRAY)
             {
-                a->size = d->list.value->array.size->num.ival * a->size;
+                a->size *= d->list.value->array.size->num.ival;
+                //a->size *= calculate_sizeof(d->list.next) / 2;
+                //a->am = M_POINTER;
                 return a;
             }
 
             a->size = a->size;
             a->am = M_ARRAY;
             // need to generate pointer to access memory at that array
-            // consider: do we need M_ARRAY?
             return bb_op_generate_lea(
                     a, create_arg(A_REG, a), block
                     );
             break;
         case POINTER:
             a = bb_op_generate_declarators(d->list.next, block);
-            if(a->am == M_ARRAY) //multidim
+            if(a->am == M_ARRAY)
                 return a;
             
             a->am = M_POINTER;

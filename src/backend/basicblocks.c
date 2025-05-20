@@ -235,8 +235,6 @@ struct bb_arg *bb_gen_ir(ast_node *n)
         case LIST: // keep on moving
             {
                 struct bb_arg *a = bb_gen_ir(n->list.value);
-                //if(a == NULL)
-                //    goto error;
 
                 if(n->list.next != NULL)
                 {
@@ -305,6 +303,20 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                                 goto error;
                             if(LEFTOP)
                                 return a;
+                            if(a->am == M_ARRAY)
+                            {
+                                a->size = sizeof(int);  // this breaks on 3d
+                                                        // todo never implement
+                                                        // sizeof on bb_args.
+                                                        //
+                                                        //  they would probbaly
+                                                        //  include the
+                                                        //  declarator nested in
+                                                        //  the inheritor or
+                                                        //  something. 
+                                return a;
+                            }
+
                             return bb_op_generate_load(
                                         a, create_arg(A_REG, NULL), cursor.current
                                     );
@@ -322,17 +334,11 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                                     );
                         }
                         break;
-//                    case SIZEOF:  // there is a crazy stack corruption going
-//                                  // on.... unaop.expression becomes the ident
-//                                  // code itself, causing immediate segfault.
-//                                  // no clue what happened. obv there is no
-//                                  // time left, so sizeof has to go
-//                                  // the issues appear to occur within dim
-//                                  // arrays, eg a[2]
-//                        astprint(n->unaop.expression);
-//                        return bb_op_generate_intconst(
-//                                    calculate_sizeof(n->unaop.expression), cursor.current
-//                                );
+                    case SIZEOF:    // calculate_sizeof is under ast_utils.c
+                        return bb_op_generate_intconst(
+                                    calculate_sizeof(n->unaop.expression), 
+                                    cursor.current
+                                );
                     case PLUSPLUS:
                         {
                             struct bb_arg *a = bb_gen_ir(n->unaop.expression);
@@ -489,6 +495,22 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                             if(r == NULL || l == NULL)
                                 goto error;
                             
+                            if((ADDRTYPE(l->am)) || (ADDRTYPE(r->am)))
+                            {
+                                if(LITERALTYPE(l->am))
+                                {
+                                    l = bb_op_generate_div(l, 
+                                            bb_op_generate_intconst(r->size, cursor.current),
+                                            cursor.current);
+                                }
+                                if(LITERALTYPE(r->am))
+                                {
+                                    r = bb_op_generate_div(r, 
+                                            bb_op_generate_intconst(l->size, cursor.current),
+                                            cursor.current);
+                                }
+                            }
+
                             return bb_op_generate_sub(l, r, cursor.current);
                         }
                     case SHL: case SHR:
@@ -549,7 +571,8 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                                 goto error;
                            
                             // conditional inversion
-                            bb_op_generate_cmp(r, l, cursor.current);
+                            bb_op_generate_cmp(l, r, cursor.current);
+                            cursor.current->invert = 1;
                             return bb_op_generate_brgt(cursor.current);
                         }
                     case GTEQ:
@@ -560,7 +583,8 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                                 goto error;
                             
                             // conditional inversion
-                            bb_op_generate_cmp(r, l, cursor.current);
+                            bb_op_generate_cmp(l, r, cursor.current);
+                            cursor.current->invert = 1;
                             return bb_op_generate_brlt(cursor.current);
                         }
                     case EQEQ:

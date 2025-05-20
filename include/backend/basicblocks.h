@@ -99,8 +99,10 @@ struct bb {
     int fn_num;
     int bb_num;
 
+    int invert;
+
     struct bb_op *start;
-    
+
     // cursor storage
     struct bb *next;
     

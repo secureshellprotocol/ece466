@@ -241,36 +241,45 @@ uint32_t calculate_sizeof(ast_node *n)
         STDERR("Provided NULL node!");
     }
     
-    if(n->op_type == LIST)
-        n = n->list.value;
+    ast_node *iter = n;
 
-    astprint(n);
+    if(iter->op_type != LIST)
+        iter = ast_list_start(iter);
 
-    switch(n->op_type)
+    while(iter)
     {
-        case IDENT:
-            return ast_get_ident_size(n);
-            break;
-        case UNAOP:
-            {
-                if(n->unaop.token == '*')
+        switch(iter->list.value->op_type)
+        {
+            case IDENT:
+                return ast_get_ident_size(iter->list.value);
+                break;
+            case UNAOP:
                 {
-                    return calculate_sizeof(n->unaop.expression);
+                    if(iter->list.value->unaop.token == '*')
+                    {
+                        return calculate_sizeof(iter->list.value->unaop.expression);
+                    }
                 }
-            }
-            break;
-        case BINOP:
-            {
-                int l, r;
-                l = calculate_sizeof(n->binop.left);
-                r = calculate_sizeof(n->binop.right);
-                if(l > r) 
-                    return l;
-                return r;
-            }
-            break;
-        default:
-            break;
+                break;
+            case BINOP:
+                {
+                    int l, r;
+                    l = calculate_sizeof(iter->list.value->binop.left);
+                    r = calculate_sizeof(iter->list.value->binop.right);
+                    if(l > r) 
+                        return l;
+                    return r;
+                }
+                break;
+            case NUMBER:
+                return sizeof(int);
+            case LIST:
+                iter = iter->list.next;
+                break;
+            default:
+                return ast_get_type_size(n);
+        }
+
     }
     return 0;
 }
@@ -280,13 +289,38 @@ uint32_t ast_get_type_size(ast_node *d)
     uint32_t tags = 0;
     uint32_t sum = 0;
 
-    if(d == NULL || d->d.decl_specs == NULL)
+    if(d == NULL)
     {
-        STDERR("Provided null specifiers when calculating sizeof!");
+        STDERR("Empty node provided!");
         return 0;
     }
+    
+    ast_node *spec, *decls;    
+    if(d->op_type == DECLARATION){
+        if(d->d.decl_specs == NULL)
+        {
+            STDERR("Provided null specifiers when calculating sizeof!");
+            return 0;
+        }
+        spec = d->d.decl_specs;
 
-    ast_node *spec = d->d.decl_specs;
+        decls = d->d.declarator;
+    }
+    else
+    {
+        spec = d;
+        decls = d;
+    }
+
+
+
+    if(spec->op_type != LIST)
+    {
+        spec = ast_list_start(d);
+        decls = ast_list_start(d);
+    }
+
+
     while(spec)
     {
         switch(spec->list.value->op_type)
@@ -336,8 +370,6 @@ uint32_t ast_get_type_size(ast_node *d)
     if(tags == 0)
         sum = sizeof(int);
 
-   
-    ast_node *decls = d->d.declarator;
     while(decls)
     {
         switch(decls->list.value->op_type)
@@ -372,7 +404,8 @@ uint32_t ast_get_ident_size(ast_node *ident)
             ident->ident.value,
             NS_IDENTS, -1
             );
-    
+   
+    astprint(s->d);
     return ast_get_type_size(s->d);
 }
 
