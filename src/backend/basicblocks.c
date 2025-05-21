@@ -357,8 +357,14 @@ struct bb_arg *bb_gen_ir(ast_node *n)
                             }
                             // generate addition
                             struct bb_arg *one = bb_op_generate_intconst(1, cursor.current);
-                            bb_op_generate_addition(
+                            struct bb_arg *res = bb_op_generate_addition(
                                     a, one, cursor.current
+                                    );
+                            // move addition back
+                            bb_op_generate_mov(
+                                    res, 
+                                    bb_gen_ir(n->unaop.expression), 
+                                    cursor.current
                                     );
                             return dest;
                         }
